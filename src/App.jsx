@@ -31,11 +31,11 @@ const App = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Background gradient orbs */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-[oklch(0.55_0.22_270_/_0.12)] blur-[100px] dark:bg-[oklch(0.55_0.22_270_/_0.08)]" />
-        <div className="absolute -bottom-40 -left-40 h-[400px] w-[400px] rounded-full bg-[oklch(0.60_0.20_300_/_0.10)] blur-[100px] dark:bg-[oklch(0.60_0.20_300_/_0.06)]" />
-        <div className="absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[oklch(0.65_0.15_330_/_0.06)] blur-[80px] dark:bg-[oklch(0.65_0.15_330_/_0.04)]" />
+      {/* Background gradient orbs — reduced blur for perf */}
+      <div className="pointer-events-none fixed inset-0 -z-10" style={{ contain: 'strict' }}>
+        <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-[oklch(0.55_0.22_270_/_0.12)] blur-[60px] dark:bg-[oklch(0.55_0.22_270_/_0.08)]" />
+        <div className="absolute -bottom-40 -left-40 h-[400px] w-[400px] rounded-full bg-[oklch(0.60_0.20_300_/_0.10)] blur-[60px] dark:bg-[oklch(0.60_0.20_300_/_0.06)]" />
+        <div className="absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[oklch(0.65_0.15_330_/_0.06)] blur-[50px] dark:bg-[oklch(0.65_0.15_330_/_0.04)]" />
       </div>
 
       <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center gap-8 px-4 py-8 sm:px-6 lg:px-8">
@@ -58,13 +58,22 @@ const App = () => {
             id="theme-toggle"
             onClick={toggleTheme}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            className="group relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-border bg-card/60 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 active:scale-95"
+            className="group relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-border bg-card/60 backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 active:scale-95"
           >
-            {theme === 'dark' ? (
-              <Sun className="h-[18px] w-[18px] text-amber-400 transition-transform duration-300 group-hover:rotate-45" />
-            ) : (
-              <Moon className="h-[18px] w-[18px] text-indigo-500 transition-transform duration-300 group-hover:-rotate-12" />
-            )}
+            <Sun
+              className={`absolute h-[18px] w-[18px] text-amber-400 transition-all duration-300 ${
+                theme === 'dark'
+                  ? 'rotate-0 scale-100 opacity-100'
+                  : 'rotate-90 scale-0 opacity-0'
+              }`}
+            />
+            <Moon
+              className={`absolute h-[18px] w-[18px] text-indigo-500 transition-all duration-300 ${
+                theme === 'dark'
+                  ? '-rotate-90 scale-0 opacity-0'
+                  : 'rotate-0 scale-100 opacity-100'
+              }`}
+            />
           </button>
         </header>
 
