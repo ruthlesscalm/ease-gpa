@@ -15,7 +15,7 @@ import {
   SelectItem,
   SelectLabel,
 } from '@/components/ui/select';
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback, useEffect, memo } from 'react';
 import { BookOpen, Target, TrendingUp, CheckCircle, XCircle, Trophy } from 'lucide-react';
 import {
   GRADE_TABLE,
@@ -450,10 +450,52 @@ function NonExamSubjectResult({ subject, totalMarks, grade, gradePoints }) {
   );
 }
 
+const MARKS_KEY = 'ease-gpa-marks';
+const TARGETS_KEY = 'ease-gpa-target-grades';
+
+function loadJSON(key, fallback = {}) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 // ── Main Component ──
 const FirstYear = ({ selectedCycle, selectedSemester }) => {
-  const [marks, setMarks] = useState({});
-  const [targetGrades, setTargetGrades] = useState({});
+  const storagePrefix = `${selectedCycle}-${selectedSemester}`;
+  const marksKey = `${MARKS_KEY}-${storagePrefix}`;
+  const targetsKey = `${TARGETS_KEY}-${storagePrefix}`;
+
+  const [marks, setMarks] = useState(() => loadJSON(marksKey));
+  const [targetGrades, setTargetGrades] = useState(() => loadJSON(targetsKey));
+
+  // Re-load from storage when cycle/semester changes
+  useEffect(() => {
+    setMarks(loadJSON(marksKey));
+    setTargetGrades(loadJSON(targetsKey));
+  }, [marksKey, targetsKey]);
+
+  // Persist marks to localStorage
+  useEffect(() => {
+    localStorage.setItem(marksKey, JSON.stringify(marks));
+  }, [marks, marksKey]);
+
+  // Persist target grades to localStorage
+  useEffect(() => {
+    localStorage.setItem(targetsKey, JSON.stringify(targetGrades));
+  }, [targetGrades, targetsKey]);
+
+  // Listen for storage clear (reset from App)
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === marksKey && e.newValue === null) setMarks({});
+      if (e.key === targetsKey && e.newValue === null) setTargetGrades({});
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [marksKey, targetsKey]);
 
   const handleInputChange = useCallback((value, field, alias, max) => {
     const numValue = parseFloat(value);

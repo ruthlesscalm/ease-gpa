@@ -9,9 +9,9 @@ import {
   SelectItem,
   SelectLabel,
 } from '@/components/ui/select';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '@/context/ThemeContext';
-import { Sun, Moon, GraduationCap, Clock } from 'lucide-react';
+import { Sun, Moon, GraduationCap, Clock, RotateCcw } from 'lucide-react';
 
 const semesters = [
   '1st Sem',
@@ -24,10 +24,44 @@ const semesters = [
   '8th Sem',
 ];
 
+const STORAGE_KEYS = {
+  SEMESTER: 'ease-gpa-semester',
+  CYCLE: 'ease-gpa-cycle',
+  MARKS: 'ease-gpa-marks',
+  TARGET_GRADES: 'ease-gpa-target-grades',
+};
+
 const App = () => {
-  const [selectedSemester, setSelectedSemester] = useState('');
-  const [selectedCycle, setSelectedCycle] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.SEMESTER) || '',
+  );
+  const [selectedCycle, setSelectedCycle] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.CYCLE) || '',
+  );
   const { theme, toggleTheme } = useTheme();
+
+  // Persist semester & cycle selections
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SEMESTER, selectedSemester);
+  }, [selectedSemester]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.CYCLE, selectedCycle);
+  }, [selectedCycle]);
+
+  // Reset everything (preserves theme preference)
+  const handleReset = useCallback(() => {
+    setSelectedSemester('');
+    setSelectedCycle('');
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('ease-gpa-') && key !== 'ease-gpa-theme') {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+  }, []);
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -54,27 +88,45 @@ const App = () => {
               </p>
             </div>
           </div>
-          <button
-            id="theme-toggle"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            className="group relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-border bg-card/60 backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 active:scale-95"
-          >
-            <Sun
-              className={`absolute h-[18px] w-[18px] text-amber-400 transition-all duration-300 ${
-                theme === 'dark'
-                  ? 'rotate-0 scale-100 opacity-100'
-                  : 'rotate-90 scale-0 opacity-0'
-              }`}
-            />
-            <Moon
-              className={`absolute h-[18px] w-[18px] text-indigo-500 transition-all duration-300 ${
-                theme === 'dark'
-                  ? '-rotate-90 scale-0 opacity-0'
-                  : 'rotate-0 scale-100 opacity-100'
-              }`}
-            />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Reset button */}
+            {(selectedSemester || selectedCycle) && (
+              <button
+                id="reset-all"
+                onClick={handleReset}
+                aria-label="Reset all inputs"
+                className="group relative flex h-10 cursor-pointer items-center gap-1.5 rounded-xl border border-border bg-card/60 px-3 backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-destructive/30 hover:shadow-lg hover:shadow-destructive/5 active:scale-95"
+              >
+                <RotateCcw className="h-[15px] w-[15px] text-muted-foreground transition-all duration-300 group-hover:rotate-[-180deg] group-hover:text-destructive" />
+                <span className="text-xs font-medium text-muted-foreground transition-colors group-hover:text-destructive">
+                  Reset
+                </span>
+              </button>
+            )}
+
+            {/* Theme toggle */}
+            <button
+              id="theme-toggle"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              className="group relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-border bg-card/60 backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 active:scale-95"
+            >
+              <Sun
+                className={`absolute h-[18px] w-[18px] text-amber-400 transition-all duration-300 ${
+                  theme === 'dark'
+                    ? 'rotate-0 scale-100 opacity-100'
+                    : 'rotate-90 scale-0 opacity-0'
+                }`}
+              />
+              <Moon
+                className={`absolute h-[18px] w-[18px] text-indigo-500 transition-all duration-300 ${
+                  theme === 'dark'
+                    ? '-rotate-90 scale-0 opacity-0'
+                    : 'rotate-0 scale-100 opacity-100'
+                }`}
+              />
+            </button>
+          </div>
         </header>
 
         {/* ── Selector Card ── */}
