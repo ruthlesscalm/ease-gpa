@@ -1,3 +1,4 @@
+import FirstYear from '@/components/FirstYear';
 import { Card } from '@/components/ui/card';
 import {
   Select,
@@ -48,21 +49,27 @@ const App = () => {
           </SelectContent>
         </Select>
         {(selectedSemester === '1' || selectedSemester === '2') && (
-          <Select
-            value={selectedCycle}
-            onValueChange={(value) => setSelectedCycle(value)}
-          >
-            <SelectTrigger className="w-full max-w-48">
-              <SelectValue placeholder="Select the cycle" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel className="sr-only">Cycles</SelectLabel>
-                <SelectItem value="physics">Physics cycle</SelectItem>
-                <SelectItem value="chemistry">Chemistry cycle</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <div>
+            <Select
+              value={selectedCycle}
+              onValueChange={(value) => setSelectedCycle(value)}
+            >
+              <SelectTrigger className="w-full max-w-48">
+                <SelectValue placeholder="Select the cycle" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel className="sr-only">Cycles</SelectLabel>
+                  <SelectItem value="physics">Physics cycle</SelectItem>
+                  <SelectItem value="chemistry">Chemistry cycle</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <FirstYear
+              selectedCycle={selectedCycle}
+              selectedSemester={selectedSemester}
+            />
+          </div>
         )}
       </Card>
     </main>
