@@ -48,7 +48,7 @@ const App = () => {
             </SelectGroup>
           </SelectContent>
         </Select>
-        {(selectedSemester === '1' || selectedSemester === '2') && (
+        {selectedSemester === '1' || selectedSemester === '2' ? (
           <div>
             <Select
               value={selectedCycle}
@@ -70,6 +70,8 @@ const App = () => {
               selectedSemester={selectedSemester}
             />
           </div>
+        ) : (
+          'Comming Soon'
         )}
       </Card>
     </main>
