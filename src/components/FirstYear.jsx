@@ -47,7 +47,7 @@ const chemistryCycleSubjects = [
     alias: 'EGDT',
     name: 'Engineering Graphis and Design Thiking',
     credits: 4,
-    mse: true,
+    mse: false,
   },
   { alias: 'OOP', name: 'Object Oriented Programming', credits: 3, mse: true },
   { alias: 'TE', name: 'Technical English', credits: 2, mse: false },
@@ -151,6 +151,7 @@ function marksInput(cycleSubjects, selectedSemester) {
               </FieldLabel>
               <Input
                 id="mse-marks"
+                type="number"
                 placeholder="Out of 40 Marks"
                 max={checkCredits(cmnSub).maxMSEMarks}
                 min={0}
@@ -171,6 +172,7 @@ function marksInput(cycleSubjects, selectedSemester) {
               </FieldLabel>
               <Input
                 id="cia-marks"
+                type="number"
                 placeholder={checkCredits(cmnSub).placeholder}
                 max={checkCredits(cmnSub).maxCIAMarks}
                 min={0}
