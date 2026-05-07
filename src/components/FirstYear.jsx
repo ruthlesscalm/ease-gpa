@@ -570,7 +570,7 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
             </div>
           </div>
 
-          <form className="flex w-full flex-col gap-4">
+          <form className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
             {allSubjects.map((subject, index) => {
               const subjectState = marks[subject.alias] || {};
               const mseData = subjectState.mse || DEFAULT_FIELD;
@@ -590,7 +590,7 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
 
           {/* ── Results Section ── */}
           {hasAnyMarks && (
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-5 lg:gap-6">
               {/* Section header */}
               <div className="flex items-center gap-2.5 border-t border-border/40 pt-6">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
@@ -607,8 +607,8 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
               </div>
 
               {/* Exam subjects */}
-              <div className="flex flex-col gap-3">
-                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase lg:col-span-2">
                   Exam Subjects (SSE Required)
                 </span>
                 {results
@@ -632,8 +632,8 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
               </div>
 
               {/* Non-exam subjects */}
-              <div className="flex flex-col gap-2">
-                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase lg:col-span-2">
                   Non-Exam Subjects
                 </span>
                 {results
@@ -653,7 +653,7 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
 
               {/* ── SGPA Card ── */}
               {sgpa !== null && (
-                <div className="glass rounded-2xl p-6 text-center">
+                <div className="glass rounded-2xl p-6 text-center lg:col-span-2">
                   <div className="mb-1 flex items-center justify-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                     <TrendingUp className="h-3.5 w-3.5" />
                     Predicted SGPA
