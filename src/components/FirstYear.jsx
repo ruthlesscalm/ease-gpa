@@ -6,7 +6,27 @@ import {
   ItemDescription,
   ItemTitle,
 } from '@/components/ui/item';
-import { useState } from 'react';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+} from '@/components/ui/select';
+import { useState, useMemo } from 'react';
+import { BookOpen, Target, TrendingUp, CheckCircle, XCircle, Trophy } from 'lucide-react';
+import {
+  GRADE_TABLE,
+  getGradeFromMarks,
+  hasSSE,
+  calculateInternal,
+  getNonSSETotal,
+  getAchievableGrades,
+  calculateSSENeeded,
+  calculateSGPA,
+} from '@/lib/grading';
 
 const physicsCycleSubjects = [
   {
@@ -112,155 +132,561 @@ function checkCredits(subObj) {
   }
 }
 
-function marksInput(cycleSubjects, selectedSemester) {
-  const cmnSub = commonSubjects[selectedSemester - 1];
-  const [marks, setMarks] = useState({});
+// ── Grade badge color mapping ──
+const GRADE_COLORS = {
+  O: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+  'A+': 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+  A: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
+  'B+': 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
+  B: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+  P: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
+  F: 'bg-red-500/15 text-red-600 dark:text-red-400',
+};
 
-  function handleInputChange(value, field, alias, max) {
-    const numValue = parseFloat(value);
-    const isInvalid = numValue > max || numValue < 0;
-    setMarks((prev) => {
-      return {
-        ...prev,
-        [alias]: {
-          ...prev[alias],
-          [field]: {
-            value,
-            isInvalid,
-          },
-        },
-      };
-    });
-  }
-  const cmnSubjectState = marks[cmnSub.alias] || {};
-  const cmnMseData = cmnSubjectState.mse || { value: '', isInvalid: false };
-  const cmnCiaData = cmnSubjectState.cia || { value: '', isInvalid: false };
-
+function GradeBadge({ grade, points, size = 'sm' }) {
+  const colors = GRADE_COLORS[grade] || GRADE_COLORS.F;
+  const sizeClasses =
+    size === 'lg'
+      ? 'px-3 py-1 text-sm font-bold'
+      : 'px-2 py-0.5 text-[11px] font-semibold';
   return (
-    <>
-      <div key={cmnSub.alias}>
-        <Item variant="outline">
-          <ItemContent>
-            <ItemTitle>{cmnSub.alias}</ItemTitle>
-            <ItemDescription>{cmnSub.name}</ItemDescription>
-          </ItemContent>
-          <FieldGroup className="grid max-w-sm grid-cols-2">
-            <Field data-invalid={cmnMseData.isInvalid}>
-              <FieldLabel htmlFor="mse-marks">
-                MSE Marks {cmnMseData.isInvalid && '( Invalid ! )'}
-              </FieldLabel>
-              <Input
-                id="mse-marks"
-                type="number"
-                placeholder="Out of 40 Marks"
-                max={checkCredits(cmnSub).maxMSEMarks}
-                min={0}
-                value={cmnMseData.value}
-                onChange={(e) =>
-                  handleInputChange(
-                    e.target.value,
-                    'mse',
-                    cmnSub.alias,
-                    checkCredits(cmnSub).maxMSEMarks,
-                  )
-                }
-              />
-            </Field>
-            <Field data-invalid={cmnCiaData.isInvalid}>
-              <FieldLabel htmlFor="cia-marks">
-                Other Component Marks {cmnCiaData.isInvalid && '( Invalid ! )'}
-              </FieldLabel>
-              <Input
-                id="cia-marks"
-                type="number"
-                placeholder={checkCredits(cmnSub).placeholder}
-                max={checkCredits(cmnSub).maxCIAMarks}
-                min={0}
-                value={cmnCiaData.value}
-                onChange={(e) =>
-                  handleInputChange(
-                    e.target.value,
-                    'cia',
-                    cmnSub.alias,
-                    checkCredits(cmnSub).maxCIAMarks,
-                  )
-                }
-              />
-            </Field>
-          </FieldGroup>
-        </Item>
-      </div>
-      {cycleSubjects.map((v) => {
-        const subjectState = marks[v.alias] || {};
-        const mseData = subjectState.mse || { value: '', isInvalid: false };
-        const ciaData = subjectState.cia || { value: '', isInvalid: false };
-        return (
-          <div key={v.alias}>
-            <Item variant="outline">
-              <ItemContent>
-                <ItemTitle>{v.alias}</ItemTitle>
-                <ItemDescription>{v.name}</ItemDescription>
-              </ItemContent>
-              <FieldGroup className="grid max-w-sm grid-cols-2">
-                <Field data-invalid={mseData.isInvalid}>
-                  <FieldLabel htmlFor="mse-marks">
-                    MSE Marks {mseData.isInvalid && '( Invalid ! )'}
-                  </FieldLabel>
-                  <Input
-                    type="number"
-                    id="mse-marks"
-                    placeholder="Out of 40 Marks"
-                    disabled={!v.mse}
-                    max={checkCredits(v).maxMSEMarks}
-                    min={0}
-                    value={mseData.value}
-                    onChange={(e) =>
-                      handleInputChange(
-                        e.target.value,
-                        'mse',
-                        v.alias,
-                        checkCredits(v).maxMSEMarks,
-                      )
-                    }
-                  />
-                </Field>
-                <Field data-invalid={ciaData.isInvalid}>
-                  <FieldLabel htmlFor="cia-marks">
-                    Other Component Marks {ciaData.isInvalid && '( Invalid ! )'}
-                  </FieldLabel>
-                  <Input
-                    id="cia-marks"
-                    placeholder={checkCredits(v).placeholder}
-                    max={checkCredits(v).maxCIAMarks}
-                    min={0}
-                    value={ciaData.value}
-                    onChange={(e) =>
-                      handleInputChange(
-                        e.target.value,
-                        'cia',
-                        v.alias,
-                        checkCredits(v).maxCIAMarks,
-                      )
-                    }
-                  />
-                </Field>
-              </FieldGroup>
-            </Item>
-          </div>
-        );
-      })}
-    </>
+    <span className={`inline-flex items-center gap-1 rounded-full ${colors} ${sizeClasses}`}>
+      {grade}
+      {points != null && <span className="opacity-70">({points})</span>}
+    </span>
   );
 }
 
-const FirstYear = ({ selectedCycle, selectedSemester }) => {
+// ── Subject Input Item ──
+function SubjectItem({ subject, marks, handleInputChange, index }) {
+  const subjectState = marks[subject.alias] || {};
+  const mseData = subjectState.mse || { value: '', isInvalid: false };
+  const ciaData = subjectState.cia || { value: '', isInvalid: false };
+  const creditInfo = checkCredits(subject);
+
   return (
-    <form className="flex w-full max-w-md flex-col gap-6">
-      {selectedCycle === 'physics' &&
-        marksInput(physicsCycleSubjects, selectedSemester)}
-      {selectedCycle === 'chemistry' &&
-        marksInput(chemistryCycleSubjects, selectedSemester)}
-    </form>
+    <Item
+      variant="outline"
+      key={subject.alias}
+      className="animate-fade-in-up rounded-xl border-border/60 transition-all duration-200 hover:border-primary/20 hover:shadow-sm"
+      style={{ animationDelay: `${0.05 * index}s` }}
+    >
+      <ItemContent>
+        <ItemTitle className="flex items-center gap-2">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+            {subject.alias.slice(0, 2)}
+          </span>
+          <span>{subject.alias}</span>
+          <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {subject.credits} cr
+          </span>
+        </ItemTitle>
+        <ItemDescription className="pl-9">{subject.name}</ItemDescription>
+      </ItemContent>
+      <FieldGroup className="grid basis-full grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field data-invalid={mseData.isInvalid}>
+          <FieldLabel htmlFor={`mse-${subject.alias}`}>
+            <span className="flex items-center gap-1.5">
+              MSE Marks
+              {mseData.isInvalid && (
+                <span className="text-[10px] font-semibold text-destructive">
+                  Invalid!
+                </span>
+              )}
+            </span>
+          </FieldLabel>
+          <Input
+            id={`mse-${subject.alias}`}
+            type="text"
+            inputMode="decimal"
+            placeholder="Out of 40 Marks"
+            disabled={!subject.mse}
+            max={creditInfo.maxMSEMarks}
+            min={0}
+            value={mseData.value}
+            className={
+              mseData.isInvalid
+                ? 'border-destructive/50 ring-2 ring-destructive/20'
+                : ''
+            }
+            onChange={(e) =>
+              handleInputChange(
+                e.target.value,
+                'mse',
+                subject.alias,
+                creditInfo.maxMSEMarks,
+              )
+            }
+          />
+        </Field>
+        <Field data-invalid={ciaData.isInvalid}>
+          <FieldLabel htmlFor={`cia-${subject.alias}`}>
+            <span className="flex items-center gap-1.5">
+              Other Component
+              {ciaData.isInvalid && (
+                <span className="text-[10px] font-semibold text-destructive">
+                  Invalid!
+                </span>
+              )}
+            </span>
+          </FieldLabel>
+          <Input
+            id={`cia-${subject.alias}`}
+            type="text"
+            inputMode="decimal"
+            placeholder={creditInfo.placeholder}
+            max={creditInfo.maxCIAMarks}
+            min={0}
+            value={ciaData.value}
+            className={
+              ciaData.isInvalid
+                ? 'border-destructive/50 ring-2 ring-destructive/20'
+                : ''
+            }
+            onChange={(e) =>
+              handleInputChange(
+                e.target.value,
+                'cia',
+                subject.alias,
+                creditInfo.maxCIAMarks,
+              )
+            }
+          />
+        </Field>
+      </FieldGroup>
+    </Item>
+  );
+}
+
+// ── Exam Subject Result Card ──
+function ExamSubjectResult({ subject, internal, achievableGrades, targetGrade, sseInfo, onTargetChange }) {
+  const maxInternal = subject.mse ? 60 : 60;
+
+  return (
+    <div className="animate-fade-in-up rounded-xl border border-border/60 p-4 transition-all duration-200">
+      {/* Header */}
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-primary">
+            {subject.alias.slice(0, 2)}
+          </span>
+          <span className="text-sm font-semibold">{subject.alias}</span>
+          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            {subject.credits} cr
+          </span>
+        </div>
+        {targetGrade && sseInfo && (
+          <GradeBadge
+            grade={targetGrade}
+            points={GRADE_TABLE.find((g) => g.grade === targetGrade)?.points}
+          />
+        )}
+      </div>
+
+      {/* Internal marks */}
+      <div className="mb-3 flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
+        <span className="text-xs text-muted-foreground">Internal Marks</span>
+        <span className="text-sm font-semibold">
+          {Math.round(internal * 100) / 100}{' '}
+          <span className="font-normal text-muted-foreground">/ {maxInternal}</span>
+        </span>
+      </div>
+
+      {/* Target grade selector */}
+      <div className="mb-3">
+        <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+          Target Grade
+        </label>
+        <Select value={targetGrade || ''} onValueChange={onTargetChange}>
+          <SelectTrigger className="w-full" id={`target-${subject.alias}`}>
+            <SelectValue placeholder="Select target grade" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel className="sr-only">Target Grades</SelectLabel>
+              {achievableGrades.map((g) => (
+                <SelectItem key={g.grade} value={g.grade}>
+                  {g.grade} — {g.points} grade points (≥ {g.min} marks)
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* SSE breakdown */}
+      {targetGrade && sseInfo && (
+        <div className="animate-fade-in space-y-2">
+          {sseInfo.alreadyAchieved ? (
+            <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400">
+              <CheckCircle className="h-4 w-4" />
+              Already achieved — no SSE marks needed!
+            </div>
+          ) : !sseInfo.isPossible ? (
+            <div className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+              <XCircle className="h-4 w-4" />
+              Not possible with current internal marks
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-lg bg-muted/50 px-3 py-2 text-center">
+                  <div className="text-[10px] text-muted-foreground">
+                    Scaled
+                  </div>
+                  <div className="text-sm font-bold">
+                    {sseInfo.sseScaled}
+                    <span className="font-normal text-muted-foreground">
+                      /40
+                    </span>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-muted/50 px-3 py-2 text-center">
+                  <div className="text-[10px] text-muted-foreground">
+                    Actual
+                  </div>
+                  <div className="text-sm font-bold">
+                    {sseInfo.sseActual}
+                    <span className="font-normal text-muted-foreground">
+                      /80
+                    </span>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-primary/10 px-3 py-2 text-center">
+                  <div className="text-[10px] text-muted-foreground">
+                    Per Module
+                  </div>
+                  <div className="text-sm font-bold text-primary">
+                    {sseInfo.perModule}
+                    <span className="font-normal text-muted-foreground">
+                      /16
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Minimum modules stat */}
+              {(() => {
+                const minModules = Math.ceil(sseInfo.sseActual / 16);
+                return (
+                  <div className="flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2">
+                    <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                      Minimum modules to study (at 16/16 each)
+                    </span>
+                    <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                      {minModules} <span className="font-normal opacity-70">of 5</span>
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* Module grid */}
+              {(() => {
+                const minModules = Math.ceil(sseInfo.sseActual / 16);
+                return (
+                  <div className="flex gap-1.5 pt-1">
+                    {[1, 2, 3, 4, 5].map((m) => {
+                      const isNeeded = m <= minModules;
+                      const isMSECovered = m <= 2;
+                      return (
+                        <div
+                          key={m}
+                          className={`flex flex-1 flex-col items-center rounded-lg border px-1.5 py-2 text-center transition-all ${
+                            isNeeded
+                              ? isMSECovered
+                                ? 'border-primary/30 bg-primary/10'
+                                : 'border-foreground/15 bg-foreground/5'
+                              : 'border-border/30 bg-muted/20 opacity-50'
+                          }`}
+                        >
+                          <span className={`text-xs font-bold ${isNeeded ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            M{m}
+                          </span>
+                          <span className={`text-[11px] font-medium ${isNeeded ? 'text-foreground/80' : 'text-muted-foreground'}`}>
+                            {sseInfo.perModule}/16
+                          </span>
+                          {isMSECovered && (
+                            <span className="mt-0.5 text-[10px] font-medium text-primary">
+                              MSE prep ✓
+                            </span>
+                          )}
+                          {!isNeeded && (
+                            <span className="mt-0.5 text-[11px] text-foreground">
+                              skip
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Non-Exam Subject Result Card ──
+function NonExamSubjectResult({ subject, totalMarks, grade, gradePoints }) {
+  return (
+    <div className="animate-fade-in-up flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-muted text-[10px] font-bold text-muted-foreground">
+          {subject.alias.slice(0, 2)}
+        </span>
+        <span className="text-sm font-medium">{subject.alias}</span>
+        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          {subject.credits} cr
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-muted-foreground">
+          {Math.round(totalMarks * 100) / 100}/100
+        </span>
+        <GradeBadge grade={grade} points={gradePoints} />
+      </div>
+    </div>
+  );
+}
+
+// ── Main Component ──
+const FirstYear = ({ selectedCycle, selectedSemester }) => {
+  const [marks, setMarks] = useState({});
+  const [targetGrades, setTargetGrades] = useState({});
+
+  function handleInputChange(value, field, alias, max) {
+    const numValue = parseFloat(value);
+    const isInvalid = numValue > max || numValue < 0 || isNaN(numValue);
+    setMarks((prev) => ({
+      ...prev,
+      [alias]: {
+        ...prev[alias],
+        [field]: { value, isInvalid },
+      },
+    }));
+  }
+
+  const cycleSubjects =
+    selectedCycle === 'physics'
+      ? physicsCycleSubjects
+      : chemistryCycleSubjects;
+
+  const cmnSub = commonSubjects[selectedSemester - 1];
+  const allSubjects = [cmnSub, ...cycleSubjects];
+
+  // ── Compute results for all subjects ──
+  const results = useMemo(() => {
+    return allSubjects.map((subject) => {
+      const subjectMarks = marks[subject.alias] || {};
+      const mseData = subjectMarks.mse || { value: '', isInvalid: false };
+      const ciaData = subjectMarks.cia || { value: '', isInvalid: false };
+
+      const mseValue = parseFloat(mseData.value) || 0;
+      const ciaValue = parseFloat(ciaData.value) || 0;
+
+      const hasMarksEntered =
+        mseData.value !== '' || ciaData.value !== '';
+      const hasInvalidMarks = mseData.isInvalid || ciaData.isInvalid;
+
+      if (hasSSE(subject)) {
+        const internal = calculateInternal(mseValue, ciaValue, subject);
+        const achievable = getAchievableGrades(internal);
+        const target = targetGrades[subject.alias];
+        let sseInfo = null;
+
+        if (target) {
+          const gradeEntry = GRADE_TABLE.find((g) => g.grade === target);
+          if (gradeEntry) {
+            sseInfo = calculateSSENeeded(gradeEntry.min, internal);
+          }
+        }
+
+        return {
+          ...subject,
+          type: 'exam',
+          internal,
+          achievableGrades: achievable,
+          targetGrade: target || null,
+          sseInfo,
+          gradePoints: target
+            ? GRADE_TABLE.find((g) => g.grade === target)?.points ?? null
+            : null,
+          hasMarksEntered,
+          hasInvalidMarks,
+        };
+      } else {
+        const total = getNonSSETotal(mseValue, ciaValue, subject);
+        const gradeInfo = getGradeFromMarks(total);
+
+        return {
+          ...subject,
+          type: 'non-exam',
+          totalMarks: total,
+          grade: gradeInfo.grade,
+          gradePoints: hasMarksEntered && !hasInvalidMarks ? gradeInfo.points : null,
+          hasMarksEntered,
+          hasInvalidMarks,
+        };
+      }
+    });
+  }, [marks, targetGrades, allSubjects]);
+
+  // ── SGPA calculation ──
+  const sgpa = useMemo(() => {
+    const validResults = results.filter(
+      (r) => r.gradePoints != null && !r.hasInvalidMarks,
+    );
+    if (validResults.length === 0) return null;
+    return calculateSGPA(validResults);
+  }, [results]);
+
+  const totalSubjects = allSubjects.length;
+  const gradedCount = results.filter(
+    (r) => r.gradePoints != null && !r.hasInvalidMarks,
+  ).length;
+
+  const hasAnyMarks = results.some((r) => r.hasMarksEntered);
+
+  return (
+    <>
+      {(selectedCycle === 'physics' || selectedCycle === 'chemistry') && (
+        <div className="flex w-full flex-col gap-6">
+          {/* ── Marks Input Section ── */}
+          <div
+            className="animate-fade-in-up flex items-center gap-2.5 pt-2"
+            style={{ animationDelay: '0.05s' }}
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <BookOpen className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">
+                Enter Your Marks
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {selectedCycle === 'physics' ? 'Physics' : 'Chemistry'} Cycle
+                — Semester {selectedSemester}
+              </p>
+            </div>
+          </div>
+
+          <form className="flex w-full flex-col gap-4">
+            {allSubjects.map((subject, index) => (
+              <SubjectItem
+                key={subject.alias}
+                subject={subject}
+                marks={marks}
+                handleInputChange={handleInputChange}
+                index={index}
+              />
+            ))}
+          </form>
+
+          {/* ── Results Section ── */}
+          {hasAnyMarks && (
+            <div className="flex flex-col gap-5">
+              {/* Section header */}
+              <div className="animate-fade-in-up flex items-center gap-2.5 border-t border-border/40 pt-6">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <Target className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-foreground">
+                    SGPA Prediction
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Select target grades for exam subjects to predict your SGPA
+                  </p>
+                </div>
+              </div>
+
+              {/* Exam subjects */}
+              <div className="flex flex-col gap-3">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Exam Subjects (SSE Required)
+                </span>
+                {results
+                  .filter((r) => r.type === 'exam')
+                  .map((r) => (
+                    <ExamSubjectResult
+                      key={r.alias}
+                      subject={r}
+                      internal={r.internal}
+                      achievableGrades={r.achievableGrades}
+                      targetGrade={r.targetGrade}
+                      sseInfo={r.sseInfo}
+                      onTargetChange={(grade) =>
+                        setTargetGrades((prev) => ({
+                          ...prev,
+                          [r.alias]: grade,
+                        }))
+                      }
+                    />
+                  ))}
+              </div>
+
+              {/* Non-exam subjects */}
+              <div className="flex flex-col gap-2">
+                <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                  Non-Exam Subjects
+                </span>
+                {results
+                  .filter((r) => r.type === 'non-exam')
+                  .map((r) =>
+                    r.hasMarksEntered && !r.hasInvalidMarks ? (
+                      <NonExamSubjectResult
+                        key={r.alias}
+                        subject={r}
+                        totalMarks={r.totalMarks}
+                        grade={r.grade}
+                        gradePoints={r.gradePoints}
+                      />
+                    ) : null,
+                  )}
+              </div>
+
+              {/* ── SGPA Card ── */}
+              {sgpa !== null && (
+                <div className="animate-fade-in-up glass rounded-2xl p-6 text-center">
+                  <div className="mb-1 flex items-center justify-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    Predicted SGPA
+                  </div>
+                  <div className="gradient-text text-5xl font-extrabold tracking-tight">
+                    {sgpa.toFixed(2)}
+                  </div>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    Based on {gradedCount} of {totalSubjects} subjects
+                  </div>
+
+                  {/* SGPA bar */}
+                  <div className="mx-auto mt-4 h-2 max-w-xs overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-primary to-[oklch(0.65_0.20_300)] transition-all duration-500"
+                      style={{ width: `${(sgpa / 10) * 100}%` }}
+                    />
+                  </div>
+                  <div className="mt-1.5 flex justify-between px-1 text-[10px] text-muted-foreground">
+                    <span>0</span>
+                    <span>10</span>
+                  </div>
+
+                  {gradedCount === totalSubjects && sgpa >= 9 && (
+                    <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      <Trophy className="h-3.5 w-3.5" />
+                      Outstanding!
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 };
 
