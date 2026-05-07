@@ -38,7 +38,7 @@ const App = () => {
         <div className="absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[oklch(0.65_0.15_330_/_0.06)] blur-[50px] dark:bg-[oklch(0.65_0.15_330_/_0.04)]" />
       </div>
 
-      <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center gap-8 px-4 py-8 sm:px-6 lg:max-w-6xl lg:px-10">
         {/* ── Header ── */}
         <header className="animate-fade-in-up flex w-full items-center justify-between">
           <div className="flex items-center gap-3">
