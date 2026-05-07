@@ -15,7 +15,7 @@ import {
   SelectItem,
   SelectLabel,
 } from '@/components/ui/select';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { BookOpen, Target, TrendingUp, CheckCircle, XCircle, Trophy } from 'lucide-react';
 import {
   GRADE_TABLE,
@@ -132,6 +132,63 @@ function checkCredits(subObj) {
   }
 }
 
+// Stable default for empty field data (avoids new object on every render)
+const DEFAULT_FIELD = { value: '', isInvalid: false };
+
+// ── Module Breakdown (extracted from IIFE) ──
+const MODULE_INDICES = [1, 2, 3, 4, 5];
+
+function ModuleBreakdown({ sseActual, perModule }) {
+  const minModules = Math.ceil(sseActual / 16);
+  return (
+    <>
+      <div className="flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2">
+        <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+          Minimum modules to study (at 16/16 each)
+        </span>
+        <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
+          {minModules} <span className="font-normal opacity-70">of 5</span>
+        </span>
+      </div>
+      <div className="flex gap-1.5 pt-1">
+        {MODULE_INDICES.map((m) => {
+          const isNeeded = m <= minModules;
+          const isMSECovered = m <= 2;
+          return (
+            <div
+              key={m}
+              className={`flex flex-1 flex-col items-center rounded-lg border px-1.5 py-2 text-center ${
+                isNeeded
+                  ? isMSECovered
+                    ? 'border-primary/30 bg-primary/10'
+                    : 'border-foreground/15 bg-foreground/5'
+                  : 'border-border/30 bg-muted/20 opacity-50'
+              }`}
+            >
+              <span className={`text-xs font-bold ${isNeeded ? 'text-foreground' : 'text-muted-foreground'}`}>
+                M{m}
+              </span>
+              <span className={`text-[11px] font-medium ${isNeeded ? 'text-foreground/80' : 'text-muted-foreground'}`}>
+                {perModule}/16
+              </span>
+              {isMSECovered && (
+                <span className="mt-0.5 text-[10px] font-medium text-primary">
+                  MSE prep ✓
+                </span>
+              )}
+              {!isNeeded && (
+                <span className="mt-0.5 text-[11px] text-foreground">
+                  skip
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 // ── Grade badge color mapping ──
 const GRADE_COLORS = {
   O: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
@@ -157,19 +214,14 @@ function GradeBadge({ grade, points, size = 'sm' }) {
   );
 }
 
-// ── Subject Input Item ──
-function SubjectItem({ subject, marks, handleInputChange, index }) {
-  const subjectState = marks[subject.alias] || {};
-  const mseData = subjectState.mse || { value: '', isInvalid: false };
-  const ciaData = subjectState.cia || { value: '', isInvalid: false };
+// ── Subject Input Item (memoized — only re-renders when its own marks change) ──
+const SubjectItem = memo(function SubjectItem({ subject, mseData, ciaData, handleInputChange, index }) {
   const creditInfo = checkCredits(subject);
 
   return (
     <Item
       variant="outline"
-      key={subject.alias}
-      className="animate-fade-in-up rounded-xl border-border/60 transition-all duration-200 hover:border-primary/20 hover:shadow-sm"
-      style={{ animationDelay: `${0.05 * index}s` }}
+      className="rounded-xl border-border/60 transition-colors duration-200 hover:border-primary/20"
     >
       <ItemContent>
         <ItemTitle className="flex items-center gap-2">
@@ -256,14 +308,14 @@ function SubjectItem({ subject, marks, handleInputChange, index }) {
       </FieldGroup>
     </Item>
   );
-}
+});
 
 // ── Exam Subject Result Card ──
 function ExamSubjectResult({ subject, internal, achievableGrades, targetGrade, sseInfo, onTargetChange }) {
-  const maxInternal = subject.mse ? 60 : 60;
+  const maxInternal = 60;
 
   return (
-    <div className="animate-fade-in-up rounded-xl border border-border/60 p-4 transition-all duration-200">
+    <div className="rounded-xl border border-border/60 p-4 transition-colors duration-200">
       {/* Header */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -366,61 +418,7 @@ function ExamSubjectResult({ subject, internal, achievableGrades, targetGrade, s
               </div>
 
               {/* Minimum modules stat */}
-              {(() => {
-                const minModules = Math.ceil(sseInfo.sseActual / 16);
-                return (
-                  <div className="flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2">
-                    <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                      Minimum modules to study (at 16/16 each)
-                    </span>
-                    <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
-                      {minModules} <span className="font-normal opacity-70">of 5</span>
-                    </span>
-                  </div>
-                );
-              })()}
-
-              {/* Module grid */}
-              {(() => {
-                const minModules = Math.ceil(sseInfo.sseActual / 16);
-                return (
-                  <div className="flex gap-1.5 pt-1">
-                    {[1, 2, 3, 4, 5].map((m) => {
-                      const isNeeded = m <= minModules;
-                      const isMSECovered = m <= 2;
-                      return (
-                        <div
-                          key={m}
-                          className={`flex flex-1 flex-col items-center rounded-lg border px-1.5 py-2 text-center transition-all ${
-                            isNeeded
-                              ? isMSECovered
-                                ? 'border-primary/30 bg-primary/10'
-                                : 'border-foreground/15 bg-foreground/5'
-                              : 'border-border/30 bg-muted/20 opacity-50'
-                          }`}
-                        >
-                          <span className={`text-xs font-bold ${isNeeded ? 'text-foreground' : 'text-muted-foreground'}`}>
-                            M{m}
-                          </span>
-                          <span className={`text-[11px] font-medium ${isNeeded ? 'text-foreground/80' : 'text-muted-foreground'}`}>
-                            {sseInfo.perModule}/16
-                          </span>
-                          {isMSECovered && (
-                            <span className="mt-0.5 text-[10px] font-medium text-primary">
-                              MSE prep ✓
-                            </span>
-                          )}
-                          {!isNeeded && (
-                            <span className="mt-0.5 text-[11px] text-foreground">
-                              skip
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
+              <ModuleBreakdown sseActual={sseInfo.sseActual} perModule={sseInfo.perModule} />
             </>
           )}
         </div>
@@ -432,7 +430,7 @@ function ExamSubjectResult({ subject, internal, achievableGrades, targetGrade, s
 // ── Non-Exam Subject Result Card ──
 function NonExamSubjectResult({ subject, totalMarks, grade, gradePoints }) {
   return (
-    <div className="animate-fade-in-up flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+    <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
       <div className="flex items-center gap-2">
         <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-muted text-[10px] font-bold text-muted-foreground">
           {subject.alias.slice(0, 2)}
@@ -457,7 +455,7 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
   const [marks, setMarks] = useState({});
   const [targetGrades, setTargetGrades] = useState({});
 
-  function handleInputChange(value, field, alias, max) {
+  const handleInputChange = useCallback((value, field, alias, max) => {
     const numValue = parseFloat(value);
     const isInvalid = numValue > max || numValue < 0 || isNaN(numValue);
     setMarks((prev) => ({
@@ -467,15 +465,17 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
         [field]: { value, isInvalid },
       },
     }));
-  }
+  }, []);
 
-  const cycleSubjects =
-    selectedCycle === 'physics'
-      ? physicsCycleSubjects
-      : chemistryCycleSubjects;
-
-  const cmnSub = commonSubjects[selectedSemester - 1];
-  const allSubjects = [cmnSub, ...cycleSubjects];
+  // Memoize allSubjects so downstream useMemo deps are stable
+  const allSubjects = useMemo(() => {
+    const cycleSubjects =
+      selectedCycle === 'physics'
+        ? physicsCycleSubjects
+        : chemistryCycleSubjects;
+    const cmnSub = commonSubjects[selectedSemester - 1];
+    return [cmnSub, ...cycleSubjects];
+  }, [selectedCycle, selectedSemester]);
 
   // ── Compute results for all subjects ──
   const results = useMemo(() => {
@@ -555,10 +555,7 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
       {(selectedCycle === 'physics' || selectedCycle === 'chemistry') && (
         <div className="flex w-full flex-col gap-6">
           {/* ── Marks Input Section ── */}
-          <div
-            className="animate-fade-in-up flex items-center gap-2.5 pt-2"
-            style={{ animationDelay: '0.05s' }}
-          >
+          <div className="flex items-center gap-2.5 pt-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <BookOpen className="h-4 w-4 text-primary" />
             </div>
@@ -574,22 +571,28 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
           </div>
 
           <form className="flex w-full flex-col gap-4">
-            {allSubjects.map((subject, index) => (
-              <SubjectItem
-                key={subject.alias}
-                subject={subject}
-                marks={marks}
-                handleInputChange={handleInputChange}
-                index={index}
-              />
-            ))}
+            {allSubjects.map((subject, index) => {
+              const subjectState = marks[subject.alias] || {};
+              const mseData = subjectState.mse || DEFAULT_FIELD;
+              const ciaData = subjectState.cia || DEFAULT_FIELD;
+              return (
+                <SubjectItem
+                  key={subject.alias}
+                  subject={subject}
+                  mseData={mseData}
+                  ciaData={ciaData}
+                  handleInputChange={handleInputChange}
+                  index={index}
+                />
+              );
+            })}
           </form>
 
           {/* ── Results Section ── */}
           {hasAnyMarks && (
             <div className="flex flex-col gap-5">
               {/* Section header */}
-              <div className="animate-fade-in-up flex items-center gap-2.5 border-t border-border/40 pt-6">
+              <div className="flex items-center gap-2.5 border-t border-border/40 pt-6">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
                   <Target className="h-4 w-4 text-primary" />
                 </div>
@@ -650,7 +653,7 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
 
               {/* ── SGPA Card ── */}
               {sgpa !== null && (
-                <div className="animate-fade-in-up glass rounded-2xl p-6 text-center">
+                <div className="glass rounded-2xl p-6 text-center">
                   <div className="mb-1 flex items-center justify-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                     <TrendingUp className="h-3.5 w-3.5" />
                     Predicted SGPA
