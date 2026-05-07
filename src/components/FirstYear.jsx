@@ -6,6 +6,7 @@ import {
   ItemDescription,
   ItemTitle,
 } from '@/components/ui/item';
+import { useState } from 'react';
 
 const physicsCycleSubjects = [
   {
@@ -100,7 +101,7 @@ function checkCredits(subObj) {
       return {
         placeholder: 'Out of 70 Marks',
         maxCIAMarks: 70,
-        maxCIAMarks: 40,
+        maxMSEMarks: 40,
       };
     }
     return {
@@ -112,66 +113,138 @@ function checkCredits(subObj) {
 }
 
 function marksInput(cycleSubjects, selectedSemester) {
+  const cmnSub = commonSubjects[selectedSemester - 1];
+  const [marks, setMarks] = useState({});
+
+  function handleInputChange(value, field, alias, max) {
+    const numValue = parseFloat(value);
+    const isInvalid = numValue > max || numValue < 0;
+    setMarks((prev) => {
+      return {
+        ...prev,
+        [alias]: {
+          ...prev[alias],
+          [field]: {
+            value,
+            isInvalid,
+          },
+        },
+      };
+    });
+  }
+  const cmnSubjectState = marks[cmnSub.alias] || {};
+  const cmnMseData = cmnSubjectState.mse || { value: '', isInvalid: false };
+  const cmnCiaData = cmnSubjectState.cia || { value: '', isInvalid: false };
+
   return (
     <>
-      <li key={commonSubjects[selectedSemester - 1].alias}>
+      <div key={cmnSub.alias}>
         <Item variant="outline">
           <ItemContent>
-            <ItemTitle>{commonSubjects[selectedSemester - 1].alias}</ItemTitle>
-            <ItemDescription>
-              {commonSubjects[selectedSemester - 1].name}
-            </ItemDescription>
+            <ItemTitle>{cmnSub.alias}</ItemTitle>
+            <ItemDescription>{cmnSub.name}</ItemDescription>
           </ItemContent>
           <FieldGroup className="grid max-w-sm grid-cols-2">
-            <Field>
-              <FieldLabel htmlFor="mse-marks">MSE Marks</FieldLabel>
-              <Input id="mse-marks" placeholder="Out of 40 Marks" />
+            <Field data-invalid={cmnMseData.isInvalid}>
+              <FieldLabel htmlFor="mse-marks">
+                MSE Marks {cmnMseData.isInvalid && '( Invalid ! )'}
+              </FieldLabel>
+              <Input
+                id="mse-marks"
+                placeholder="Out of 40 Marks"
+                max={checkCredits(cmnSub).maxMSEMarks}
+                min={0}
+                value={cmnMseData.value}
+                onChange={(e) =>
+                  handleInputChange(
+                    e.target.value,
+                    'mse',
+                    cmnSub.alias,
+                    checkCredits(cmnSub).maxMSEMarks,
+                  )
+                }
+              />
             </Field>
-            <Field>
-              <FieldLabel htmlFor="cia-marks">Other Component Marks</FieldLabel>
+            <Field data-invalid={cmnCiaData.isInvalid}>
+              <FieldLabel htmlFor="cia-marks">
+                Other Component Marks {cmnCiaData.isInvalid && '( Invalid ! )'}
+              </FieldLabel>
               <Input
                 id="cia-marks"
-                placeholder={checkCredits(
-                  commonSubjects[selectedSemester - 1].credits,
-                  commonSubjects[selectedSemester - 1],
-                )}
+                placeholder={checkCredits(cmnSub).placeholder}
+                max={checkCredits(cmnSub).maxCIAMarks}
+                min={0}
+                value={cmnCiaData.value}
+                onChange={(e) =>
+                  handleInputChange(
+                    e.target.value,
+                    'cia',
+                    cmnSub.alias,
+                    checkCredits(cmnSub).maxCIAMarks,
+                  )
+                }
               />
             </Field>
           </FieldGroup>
         </Item>
-      </li>
+      </div>
       {cycleSubjects.map((v) => {
+        const subjectState = marks[v.alias] || {};
+        const mseData = subjectState.mse || { value: '', isInvalid: false };
+        const ciaData = subjectState.cia || { value: '', isInvalid: false };
         return (
-          <li key={v.alias}>
+          <div key={v.alias}>
             <Item variant="outline">
               <ItemContent>
                 <ItemTitle>{v.alias}</ItemTitle>
                 <ItemDescription>{v.name}</ItemDescription>
               </ItemContent>
               <FieldGroup className="grid max-w-sm grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor="mse-marks">MSE Marks</FieldLabel>
+                <Field data-invalid={mseData.isInvalid}>
+                  <FieldLabel htmlFor="mse-marks">
+                    MSE Marks {mseData.isInvalid && '( Invalid ! )'}
+                  </FieldLabel>
                   <Input
                     type="number"
                     id="mse-marks"
                     placeholder="Out of 40 Marks"
                     disabled={!v.mse}
                     max={checkCredits(v).maxMSEMarks}
+                    min={0}
+                    value={mseData.value}
+                    onChange={(e) =>
+                      handleInputChange(
+                        e.target.value,
+                        'mse',
+                        v.alias,
+                        checkCredits(v).maxMSEMarks,
+                      )
+                    }
                   />
                 </Field>
-                <Field>
+                <Field data-invalid={ciaData.isInvalid}>
                   <FieldLabel htmlFor="cia-marks">
-                    Other Component Marks
+                    Other Component Marks {ciaData.isInvalid && '( Invalid ! )'}
                   </FieldLabel>
                   <Input
                     id="cia-marks"
                     placeholder={checkCredits(v).placeholder}
                     max={checkCredits(v).maxCIAMarks}
+                    min={0}
+                    value={ciaData.value}
+                    onChange={(e) =>
+                      handleInputChange(
+                        e.target.value,
+                        'cia',
+                        v.alias,
+                        checkCredits(v).maxCIAMarks,
+                      )
+                    }
                   />
                 </Field>
               </FieldGroup>
             </Item>
-          </li>
+          </div>
         );
       })}
     </>
@@ -180,12 +253,12 @@ function marksInput(cycleSubjects, selectedSemester) {
 
 const FirstYear = ({ selectedCycle, selectedSemester }) => {
   return (
-    <ul className="flex w-full max-w-md flex-col gap-6">
+    <form className="flex w-full max-w-md flex-col gap-6">
       {selectedCycle === 'physics' &&
         marksInput(physicsCycleSubjects, selectedSemester)}
       {selectedCycle === 'chemistry' &&
         marksInput(chemistryCycleSubjects, selectedSemester)}
-    </ul>
+    </form>
   );
 };
 
