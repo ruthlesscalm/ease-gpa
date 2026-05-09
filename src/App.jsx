@@ -1,4 +1,6 @@
 import FirstYear from '@/components/FirstYear';
+import SecondYear from '@/components/secondyear/SecondYear';
+import { branches } from '@/components/secondyear/data';
 import { Card } from '@/components/ui/card';
 import {
   Select,
@@ -11,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '@/context/ThemeContext';
-import { Sun, Moon, GraduationCap, Clock, RotateCcw } from 'lucide-react';
+import { Sun, Moon, GraduationCap, RotateCcw } from 'lucide-react';
 
 const semesters = [
   '1st Sem',
@@ -20,13 +22,12 @@ const semesters = [
   '4th Sem',
   '5th Sem',
   '6th Sem',
-  '7th Sem',
-  '8th Sem',
 ];
 
 const STORAGE_KEYS = {
   SEMESTER: 'ease-gpa-semester',
   CYCLE: 'ease-gpa-cycle',
+  BRANCH: 'ease-gpa-branch',
   MARKS: 'ease-gpa-marks',
   TARGET_GRADES: 'ease-gpa-target-grades',
 };
@@ -37,6 +38,9 @@ const App = () => {
   );
   const [selectedCycle, setSelectedCycle] = useState(
     () => localStorage.getItem(STORAGE_KEYS.CYCLE) || '',
+  );
+  const [selectedBranch, setSelectedBranch] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.BRANCH) || '',
   );
   const { theme, toggleTheme } = useTheme();
 
@@ -49,10 +53,15 @@ const App = () => {
     localStorage.setItem(STORAGE_KEYS.CYCLE, selectedCycle);
   }, [selectedCycle]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.BRANCH, selectedBranch);
+  }, [selectedBranch]);
+
   // Reset everything (preserves theme preference)
   const handleReset = useCallback(() => {
     setSelectedSemester('');
     setSelectedCycle('');
+    setSelectedBranch('');
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -90,7 +99,7 @@ const App = () => {
           </div>
           <div className="flex items-center gap-2">
             {/* Reset button */}
-            {(selectedSemester || selectedCycle) && (
+            {(selectedSemester || selectedCycle || selectedBranch) && (
               <button
                 id="reset-all"
                 onClick={handleReset}
@@ -148,6 +157,7 @@ const App = () => {
               onValueChange={(value) => {
                 setSelectedSemester(value);
                 setSelectedCycle('');
+                setSelectedBranch('');
               }}
             >
               <SelectTrigger className="w-full max-w-56 transition-all duration-200 hover:border-primary/40" id="semester-select">
@@ -184,6 +194,27 @@ const App = () => {
                 </SelectContent>
               </Select>
             )}
+
+            {['3', '4', '5', '6'].includes(selectedSemester) && (
+              <Select
+                value={selectedBranch}
+                onValueChange={(value) => setSelectedBranch(value)}
+              >
+                <SelectTrigger className="w-full max-w-56 animate-fade-in transition-all duration-200 hover:border-primary/40" id="branch-select">
+                  <SelectValue placeholder="Select your branch" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel className="sr-only">Branches</SelectLabel>
+                    {branches.map((b) => (
+                      <SelectItem value={b.value} key={b.value}>
+                        {b.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* ── FirstYear Form ── */}
@@ -193,30 +224,16 @@ const App = () => {
               selectedSemester={selectedSemester}
             />
           )}
+
+          {['3', '4', '5', '6'].includes(selectedSemester) && selectedBranch && (
+            <SecondYear
+              selectedBranch={selectedBranch}
+              selectedSemester={selectedSemester}
+            />
+          )}
         </Card>
 
-        {/* ── Coming Soon ── */}
-        {selectedSemester !== '' &&
-          selectedSemester !== '1' &&
-          selectedSemester !== '2' && (
-            <div
-              className="glass animate-fade-in-up flex w-full flex-col items-center gap-4 rounded-2xl py-16 text-center"
-              style={{ animationDelay: '0.15s' }}
-            >
-              <div className="animate-float flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-                <Clock className="h-7 w-7 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">
-                  Coming Soon
-                </h2>
-                <p className="mt-1 max-w-xs text-sm text-muted-foreground">
-                  Support for Semester {selectedSemester} is on the way. Stay
-                  tuned!
-                </p>
-              </div>
-            </div>
-          )}
+
 
         {/* ── Footer ── */}
         <footer className="mt-auto flex w-full items-center justify-center gap-2 pb-4 pt-8">
