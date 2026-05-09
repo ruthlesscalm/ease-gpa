@@ -88,7 +88,7 @@ const App = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative min-h-[100dvh] overflow-hidden">
       {/* Background gradient orbs — reduced blur for perf */}
       <div className="pointer-events-none fixed inset-0 -z-10" style={{ contain: 'strict' }}>
         <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-[oklch(0.55_0.22_270_/_0.12)] blur-[60px] dark:bg-[oklch(0.55_0.22_270_/_0.08)]" />
@@ -96,7 +96,7 @@ const App = () => {
         <div className="absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[oklch(0.65_0.15_330_/_0.06)] blur-[50px] dark:bg-[oklch(0.65_0.15_330_/_0.04)]" />
       </div>
 
-      <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center gap-8 px-4 py-8 sm:px-6 lg:max-w-6xl lg:px-10">
+      <main className="mx-auto flex min-h-[100dvh] max-w-3xl flex-col items-center gap-4 px-4 py-4 sm:gap-8 sm:px-6 sm:py-8 lg:max-w-6xl lg:px-10">
         {/* ── Header ── */}
         <header className="animate-fade-in-up flex w-full items-center justify-between">
           <div className="flex items-center gap-3">
@@ -251,7 +251,7 @@ const App = () => {
 
 
         {/* ── Footer ── */}
-        <footer className="mt-auto flex w-full items-center justify-center gap-6 pb-4 pt-8">
+        <footer className="mt-auto flex w-full items-center justify-center gap-6 pb-2 pt-4 sm:pb-4 sm:pt-8">
           <a
             id="github-link"
             href="https://github.com/ruthlesscalm"
