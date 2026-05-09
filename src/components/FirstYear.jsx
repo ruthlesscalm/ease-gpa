@@ -16,7 +16,14 @@ import {
   SelectLabel,
 } from '@/components/ui/select';
 import { useState, useMemo, useCallback, useEffect, memo } from 'react';
-import { BookOpen, Target, TrendingUp, CheckCircle, XCircle, Trophy } from 'lucide-react';
+import {
+  BookOpen,
+  Target,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  Trophy,
+} from 'lucide-react';
 import {
   GRADE_TABLE,
   getGradeFromMarks,
@@ -144,7 +151,7 @@ function ModuleBreakdown({ sseActual, perModule }) {
     <>
       <div className="flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2">
         <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
-          Minimum modules to study (at 16/16 each)
+          Min. modules to study
         </span>
         <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
           {minModules} <span className="font-normal opacity-70">of 5</span>
@@ -165,10 +172,14 @@ function ModuleBreakdown({ sseActual, perModule }) {
                   : 'border-border/30 bg-muted/20 opacity-50'
               }`}
             >
-              <span className={`text-xs font-bold ${isNeeded ? 'text-foreground' : 'text-muted-foreground'}`}>
+              <span
+                className={`text-xs font-bold ${isNeeded ? 'text-foreground' : 'text-muted-foreground'}`}
+              >
                 M{m}
               </span>
-              <span className={`text-[11px] font-medium ${isNeeded ? 'text-foreground/80' : 'text-muted-foreground'}`}>
+              <span
+                className={`text-[11px] font-medium ${isNeeded ? 'text-foreground/80' : 'text-muted-foreground'}`}
+              >
                 {perModule}/16
               </span>
               {isMSECovered && (
@@ -177,9 +188,7 @@ function ModuleBreakdown({ sseActual, perModule }) {
                 </span>
               )}
               {!isNeeded && (
-                <span className="mt-0.5 text-[11px] text-foreground">
-                  skip
-                </span>
+                <span className="mt-0.5 text-[11px] text-foreground">skip</span>
               )}
             </div>
           );
@@ -207,7 +216,9 @@ function GradeBadge({ grade, points, size = 'sm' }) {
       ? 'px-3 py-1 text-sm font-bold'
       : 'px-2 py-0.5 text-[11px] font-semibold';
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full ${colors} ${sizeClasses}`}>
+    <span
+      className={`inline-flex items-center gap-1 rounded-full ${colors} ${sizeClasses}`}
+    >
       {grade}
       {points != null && <span className="opacity-70">({points})</span>}
     </span>
@@ -215,7 +226,13 @@ function GradeBadge({ grade, points, size = 'sm' }) {
 }
 
 // ── Subject Input Item (memoized — only re-renders when its own marks change) ──
-const SubjectItem = memo(function SubjectItem({ subject, mseData, ciaData, handleInputChange, index }) {
+const SubjectItem = memo(function SubjectItem({
+  subject,
+  mseData,
+  ciaData,
+  handleInputChange,
+  index,
+}) {
   const creditInfo = checkCredits(subject);
 
   return (
@@ -311,7 +328,14 @@ const SubjectItem = memo(function SubjectItem({ subject, mseData, ciaData, handl
 });
 
 // ── Exam Subject Result Card ──
-function ExamSubjectResult({ subject, internal, achievableGrades, targetGrade, sseInfo, onTargetChange }) {
+function ExamSubjectResult({
+  subject,
+  internal,
+  achievableGrades,
+  targetGrade,
+  sseInfo,
+  onTargetChange,
+}) {
   const maxInternal = 60;
 
   return (
@@ -340,7 +364,9 @@ function ExamSubjectResult({ subject, internal, achievableGrades, targetGrade, s
         <span className="text-xs text-muted-foreground">Internal Marks</span>
         <span className="text-sm font-semibold">
           {Math.round(internal * 100) / 100}{' '}
-          <span className="font-normal text-muted-foreground">/ {maxInternal}</span>
+          <span className="font-normal text-muted-foreground">
+            / {maxInternal}
+          </span>
         </span>
       </div>
 
@@ -384,7 +410,7 @@ function ExamSubjectResult({ subject, internal, achievableGrades, targetGrade, s
               <div className="grid grid-cols-3 gap-2">
                 <div className="rounded-lg bg-muted/50 px-3 py-2 text-center">
                   <div className="text-[10px] text-muted-foreground">
-                    Scaled
+                    Scaled down
                   </div>
                   <div className="text-sm font-bold">
                     {sseInfo.sseScaled}
@@ -395,7 +421,7 @@ function ExamSubjectResult({ subject, internal, achievableGrades, targetGrade, s
                 </div>
                 <div className="rounded-lg bg-muted/50 px-3 py-2 text-center">
                   <div className="text-[10px] text-muted-foreground">
-                    Actual
+                    Target Marks
                   </div>
                   <div className="text-sm font-bold">
                     {sseInfo.sseActual}
@@ -418,7 +444,10 @@ function ExamSubjectResult({ subject, internal, achievableGrades, targetGrade, s
               </div>
 
               {/* Minimum modules stat */}
-              <ModuleBreakdown sseActual={sseInfo.sseActual} perModule={sseInfo.perModule} />
+              <ModuleBreakdown
+                sseActual={sseInfo.sseActual}
+                perModule={sseInfo.perModule}
+              />
             </>
           )}
         </div>
@@ -529,8 +558,7 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
       const mseValue = parseFloat(mseData.value) || 0;
       const ciaValue = parseFloat(ciaData.value) || 0;
 
-      const hasMarksEntered =
-        mseData.value !== '' || ciaData.value !== '';
+      const hasMarksEntered = mseData.value !== '' || ciaData.value !== '';
       const hasInvalidMarks = mseData.isInvalid || ciaData.isInvalid;
 
       if (hasSSE(subject)) {
@@ -554,7 +582,7 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
           targetGrade: target || null,
           sseInfo,
           gradePoints: target
-            ? GRADE_TABLE.find((g) => g.grade === target)?.points ?? null
+            ? (GRADE_TABLE.find((g) => g.grade === target)?.points ?? null)
             : null,
           hasMarksEntered,
           hasInvalidMarks,
@@ -568,7 +596,8 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
           type: 'non-exam',
           totalMarks: total,
           grade: gradeInfo.grade,
-          gradePoints: hasMarksEntered && !hasInvalidMarks ? gradeInfo.points : null,
+          gradePoints:
+            hasMarksEntered && !hasInvalidMarks ? gradeInfo.points : null,
           hasMarksEntered,
           hasInvalidMarks,
         };
@@ -606,8 +635,8 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
                 Enter Your Marks
               </h2>
               <p className="text-xs text-muted-foreground">
-                {selectedCycle === 'physics' ? 'Physics' : 'Chemistry'} Cycle
-                — Semester {selectedSemester}
+                {selectedCycle === 'physics' ? 'Physics' : 'Chemistry'} Cycle —
+                Semester {selectedSemester}
               </p>
             </div>
           </div>
