@@ -13,7 +13,10 @@ import {
 } from '@/components/ui/select';
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '@/context/ThemeContext';
-import { Sun, Moon, GraduationCap, RotateCcw } from 'lucide-react';
+import { Sun, Moon, GraduationCap, RotateCcw, Coffee, X, Copy, Check } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
+
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 const semesters = [
   '1st Sem',
@@ -42,7 +45,19 @@ const App = () => {
   const [selectedBranch, setSelectedBranch] = useState(
     () => localStorage.getItem(STORAGE_KEYS.BRANCH) || '',
   );
+  const [showSupport, setShowSupport] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { theme, toggleTheme } = useTheme();
+
+  const handleCopyUPI = async () => {
+    try {
+      await navigator.clipboard.writeText('ruthlesscalm.dev@okicici');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  };
 
   // Persist semester & cycle selections
   useEffect(() => {
@@ -255,8 +270,78 @@ const App = () => {
             </svg>
             <span className="text-xs font-medium">ruthlesscalm</span>
           </a>
+
+          {/* Support Button */}
+          <button
+            onClick={() => setShowSupport(true)}
+            aria-label="Support the creator"
+            className="group flex items-center gap-1.5 rounded-lg px-3 py-2 text-muted-foreground transition-all duration-200 hover:text-amber-500 dark:hover:text-amber-400"
+          >
+            <Coffee className="h-[18px] w-[18px] transition-transform duration-200 group-hover:scale-110" />
+            <span className="text-xs font-medium">Buy me a Chai</span>
+          </button>
         </footer>
       </main>
+
+      {/* Support Modal */}
+      {showSupport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 px-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setShowSupport(false)}
+              className="absolute right-4 top-4 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
+              <Coffee className="h-6 w-6" />
+            </div>
+            <div className="text-center">
+              <h2 className="text-lg font-semibold tracking-tight">Support EaseGPA</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                If this tool helped you save time during exams, consider buying me a chai! ☕
+              </p>
+            </div>
+            
+            <div className="mt-2 flex w-full flex-col items-center gap-4 rounded-xl border border-border bg-muted/30 p-4">
+              <div className="overflow-hidden rounded-xl bg-white p-2">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('upi://pay?pa=ruthlesscalm.dev@okicici&pn=PAVAN GOWDA S R&cu=INR&tn=EaseGPA Support')}`} 
+                  alt="UPI QR Code" 
+                  className="h-[180px] w-[180px]"
+                />
+              </div>
+              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                Scan with any UPI App
+              </p>
+            </div>
+
+            <div className="flex w-full items-center justify-between rounded-lg border border-border bg-background p-3">
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-xs text-muted-foreground">UPI ID</span>
+                <span className="truncate text-sm font-medium">ruthlesscalm.dev@okicici</span>
+              </div>
+              <button
+                onClick={handleCopyUPI}
+                className="flex items-center justify-center rounded-md bg-muted p-2 text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+                aria-label="Copy UPI ID"
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </button>
+            </div>
+            
+            <a 
+              href="upi://pay?pa=ruthlesscalm.dev@okicici&pn=PAVAN%20GOWDA%20S%20R&cu=INR&tn=EaseGPA%20Support"
+              className="mt-2 w-full rounded-xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-all hover:scale-[1.02] hover:bg-primary/90 active:scale-[0.98] sm:hidden"
+            >
+              Pay via UPI App
+            </a>
+          </div>
+        </div>
+      )}
+
+      <Analytics />
+      <SpeedInsights />
     </div>
   );
 };
