@@ -330,12 +330,6 @@ const App = () => {
               </button>
             </div>
             
-            <a 
-              href="upi://pay?pa=ruthlesscalm.dev@okicici&pn=PAVAN%20GOWDA%20S%20R&cu=INR&tn=EaseGPA%20Support"
-              className="mt-2 w-full rounded-xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-primary-foreground transition-all hover:scale-[1.02] hover:bg-primary/90 active:scale-[0.98] sm:hidden"
-            >
-              Pay via UPI App
-            </a>
           </div>
         </div>
       )}
