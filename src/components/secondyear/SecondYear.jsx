@@ -101,6 +101,7 @@ const GRADE_COLORS = {
   A: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
   'B+': 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
   B: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+  C: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400',
   P: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
   F: 'bg-red-500/15 text-red-600 dark:text-red-400',
 };
