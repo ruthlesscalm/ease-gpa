@@ -17,8 +17,9 @@ export const GRADE_TABLE = [
   { min: 80, grade: 'A+', points: 9 },
   { min: 70, grade: 'A', points: 8 },
   { min: 60, grade: 'B+', points: 7 },
-  { min: 50, grade: 'B', points: 6 },
-  { min: 40, grade: 'P', points: 5 },
+  { min: 55, grade: 'B', points: 6 },
+  { min: 50, grade: 'C', points: 5 },
+  { min: 40, grade: 'P', points: 4 },
 ];
 
 export const FAIL_GRADE = { grade: 'F', points: 0 };
