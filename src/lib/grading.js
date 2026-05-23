@@ -6,6 +6,7 @@
  *   MSE:  written for 40, scaled to 30
  *   CIA:  30 marks (or 60 for EGDT)
  *   SSE:  written for 80, scaled to 40  |  5 modules × 16 marks
+ *         EGDT: written for 60, scaled to 40  |  3 modules × 20 marks
  *   Total = MSE_scaled + CIA + SSE_scaled = 100
  *
  * Non-exam subjects (1/2 credits):
@@ -72,9 +73,16 @@ export function getAchievableGrades(internalMarks) {
 
 /**
  * Calculate SSE marks needed to reach a target total.
- * Returns scaled (out of 40), actual (out of 80), and per-module (out of 16).
+ * Returns scaled (out of 40), actual (out of maxActual), and per-module.
+ *
+ * sseConfig: { maxActual, modules }
+ *   Default: { maxActual: 80, modules: 5 }  (standard subjects)
+ *   EGDT:    { maxActual: 60, modules: 3 }
  */
-export function calculateSSENeeded(targetMinMarks, internalMarks) {
+export function calculateSSENeeded(targetMinMarks, internalMarks, sseConfig) {
+  const { maxActual = 80, modules = 5 } = sseConfig || {};
+  const scaleFactor = maxActual / 40; // 80/40 = 2  or  60/40 = 1.5
+  const marksPerModule = maxActual / modules; // 16 or 20
   const sseScaled = targetMinMarks - internalMarks;
 
   if (sseScaled <= 0) {
@@ -82,6 +90,8 @@ export function calculateSSENeeded(targetMinMarks, internalMarks) {
       sseScaled: 0,
       sseActual: 0,
       perModule: 0,
+      marksPerModule,
+      numModules: modules,
       isPossible: true,
       alreadyAchieved: true,
     };
@@ -90,20 +100,26 @@ export function calculateSSENeeded(targetMinMarks, internalMarks) {
   if (sseScaled > 40) {
     return {
       sseScaled: Math.round(sseScaled * 100) / 100,
-      sseActual: Math.round(sseScaled * 2 * 100) / 100,
-      perModule: Math.round(((sseScaled * 2) / 5) * 100) / 100,
+      sseActual: Math.round(sseScaled * scaleFactor * 100) / 100,
+      perModule: Math.round(((sseScaled * scaleFactor) / modules) * 100) / 100,
+      marksPerModule,
+      numModules: modules,
+      maxActual,
       isPossible: false,
       alreadyAchieved: false,
     };
   }
 
-  const sseActual = sseScaled * 2;
-  const perModule = sseActual / 5;
+  const sseActual = sseScaled * scaleFactor;
+  const perModule = sseActual / modules;
 
   return {
     sseScaled: Math.round(sseScaled * 100) / 100,
     sseActual: Math.round(sseActual * 100) / 100,
     perModule: Math.round(perModule * 100) / 100,
+    marksPerModule,
+    numModules: modules,
+    maxActual,
     isPossible: true,
     alreadyAchieved: false,
   };

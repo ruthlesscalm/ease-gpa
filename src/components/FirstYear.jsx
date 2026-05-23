@@ -75,6 +75,7 @@ const chemistryCycleSubjects = [
     name: 'Engineering Graphis and Design Thiking',
     credits: 4,
     mse: false,
+    sseConfig: { maxActual: 60, modules: 3 },
   },
   { alias: 'OOP', name: 'Object Oriented Programming', credits: 3, mse: true },
   { alias: 'TE', name: 'Technical English', credits: 2, mse: false },
@@ -145,8 +146,9 @@ const DEFAULT_FIELD = { value: '', isInvalid: false };
 // ── Module Breakdown (extracted from IIFE) ──
 const MODULE_INDICES = [1, 2, 3, 4, 5];
 
-function ModuleBreakdown({ sseActual, perModule }) {
-  const minModules = Math.ceil(sseActual / 16);
+function ModuleBreakdown({ sseActual, perModule, numModules = 5, marksPerModule = 16, showMSEPrep = true }) {
+  const minModules = Math.ceil(sseActual / marksPerModule);
+  const indices = MODULE_INDICES.slice(0, numModules);
   return (
     <>
       <div className="flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2">
@@ -154,13 +156,13 @@ function ModuleBreakdown({ sseActual, perModule }) {
           Min. modules to study
         </span>
         <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
-          {minModules} <span className="font-normal opacity-70">of 5</span>
+          {minModules} <span className="font-normal opacity-70">of {numModules}</span>
         </span>
       </div>
       <div className="flex gap-1.5 pt-1">
-        {MODULE_INDICES.map((m) => {
+        {indices.map((m) => {
           const isNeeded = m <= minModules;
-          const isMSECovered = m <= 2;
+          const isMSECovered = showMSEPrep && m <= 2;
           return (
             <div
               key={m}
@@ -180,7 +182,7 @@ function ModuleBreakdown({ sseActual, perModule }) {
               <span
                 className={`text-[11px] font-medium ${isNeeded ? 'text-foreground/80' : 'text-muted-foreground'}`}
               >
-                {perModule}/16
+                {perModule}/{marksPerModule}
               </span>
               {isMSECovered && (
                 <span className="mt-0.5 text-[10px] font-medium text-primary">
@@ -427,7 +429,7 @@ function ExamSubjectResult({
                   <div className="text-sm font-bold">
                     {sseInfo.sseActual}
                     <span className="font-normal text-muted-foreground">
-                      /80
+                      /{sseInfo.maxActual || 80}
                     </span>
                   </div>
                 </div>
@@ -438,7 +440,7 @@ function ExamSubjectResult({
                   <div className="text-sm font-bold text-primary">
                     {sseInfo.perModule}
                     <span className="font-normal text-muted-foreground">
-                      /16
+                      /{sseInfo.marksPerModule || 16}
                     </span>
                   </div>
                 </div>
@@ -448,6 +450,9 @@ function ExamSubjectResult({
               <ModuleBreakdown
                 sseActual={sseInfo.sseActual}
                 perModule={sseInfo.perModule}
+                numModules={sseInfo.numModules}
+                marksPerModule={sseInfo.marksPerModule}
+                showMSEPrep={subject.mse}
               />
             </>
           )}
@@ -571,7 +576,7 @@ const FirstYear = ({ selectedCycle, selectedSemester }) => {
         if (target) {
           const gradeEntry = GRADE_TABLE.find((g) => g.grade === target);
           if (gradeEntry) {
-            sseInfo = calculateSSENeeded(gradeEntry.min, internal);
+            sseInfo = calculateSSENeeded(gradeEntry.min, internal, subject.sseConfig);
           }
         }
 
