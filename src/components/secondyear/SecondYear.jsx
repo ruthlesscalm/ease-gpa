@@ -385,7 +385,7 @@ function loadJSON(key, fallback = {}) {
 }
 
 // ── Main Component ──
-const SecondYear = ({ selectedBranch, selectedSemester }) => {
+const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA }) => {
   const subjects = getSubjects(selectedSemester, selectedBranch);
 
   const storagePrefix = `${selectedBranch}-${selectedSemester}`;
@@ -644,6 +644,16 @@ const SecondYear = ({ selectedBranch, selectedSemester }) => {
                 <span>0</span>
                 <span>10</span>
               </div>
+
+              {targetSGPA != null && targetSGPA > 0 && (
+                <div className="mt-3 inline-flex flex-wrap items-center justify-center gap-2 rounded-xl border border-border/80 bg-muted/40 px-3.5 py-1.5 text-xs">
+                  <span className="text-muted-foreground">Target SGPA: <strong className="text-foreground">{targetSGPA.toFixed(2)}</strong></span>
+                  <span className="opacity-40">•</span>
+                  <span className={sgpa >= targetSGPA ? "font-semibold text-emerald-600 dark:text-emerald-400" : "font-semibold text-amber-600 dark:text-amber-400"}>
+                    {sgpa >= targetSGPA ? "Goal Met! 🎉" : `${(targetSGPA - sgpa).toFixed(2)} pts needed`}
+                  </span>
+                </div>
+              )}
 
               {gradedCount === totalSubjects && sgpa >= 9 && (
                 <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
