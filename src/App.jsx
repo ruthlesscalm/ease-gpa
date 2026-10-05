@@ -87,6 +87,19 @@ const App = () => {
     keysToRemove.forEach((key) => localStorage.removeItem(key));
   }, []);
 
+  const semNum = selectedSemester ? Number(selectedSemester) : null;
+  const isFirstYear = semNum !== null && semNum <= 2;
+  const isHigherSem = semNum !== null && semNum > 2;
+
+  // Guard against inconsistent localStorage combinations
+  useEffect(() => {
+    if (isFirstYear && selectedBranch) {
+      setSelectedBranch('');
+    } else if (isHigherSem && selectedCycle) {
+      setSelectedCycle('');
+    }
+  }, [isFirstYear, isHigherSem, selectedBranch, selectedCycle]);
+
   return (
     <div className="relative min-h-[100dvh] overflow-hidden">
       {/* Background gradient orbs — reduced blur for perf */}
@@ -162,89 +175,156 @@ const App = () => {
           <div className="flex w-full items-center gap-2 pb-1">
             <div className="h-1 w-1 rounded-full bg-primary" />
             <span className="text-xs font-semibold tracking-widest text-primary uppercase">
-              Choose Semester
+              Choose Semester &amp; Stream
             </span>
           </div>
 
-          <div className="flex w-full flex-wrap justify-center gap-4">
-            <Select
-              value={selectedSemester}
-              onValueChange={(value) => {
-                setSelectedSemester(value);
-                setSelectedCycle('');
-                setSelectedBranch('');
-              }}
-            >
-              <SelectTrigger className="w-full max-w-56 transition-all duration-200 hover:border-primary/40" id="semester-select">
-                <SelectValue placeholder="Select your semester" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel className="sr-only">Semesters</SelectLabel>
-                  {semesters.map((v) => {
-                    return (
-                      <SelectItem value={v.slice(0, 1)} key={v.slice(0, 1)}>
-                        {v}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            {(selectedSemester === '1' || selectedSemester === '2') && (
-              <Select
-                value={selectedCycle}
-                onValueChange={(value) => setSelectedCycle(value)}
+          <div className="flex w-full flex-wrap justify-center gap-4 sm:gap-6">
+            {/* Option 1: Semester */}
+            <div className="flex w-full max-w-56 flex-col gap-1.5">
+              <label
+                htmlFor="semester-select"
+                className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
               >
-                <SelectTrigger className="w-full max-w-56 animate-fade-in transition-all duration-200 hover:border-primary/40" id="cycle-select">
-                  <SelectValue placeholder="Select the cycle" />
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                  1
+                </span>
+                Semester
+              </label>
+              <Select
+                value={selectedSemester}
+                onValueChange={(value) => {
+                  setSelectedSemester(value);
+                  setSelectedCycle('');
+                  setSelectedBranch('');
+                }}
+              >
+                <SelectTrigger
+                  className="w-full transition-all duration-200 hover:border-primary/40"
+                  id="semester-select"
+                >
+                  <SelectValue placeholder="Select your semester" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel className="sr-only">Cycles</SelectLabel>
-                    <SelectItem value="physics">Physics cycle</SelectItem>
-                    <SelectItem value="chemistry">Chemistry cycle</SelectItem>
+                    <SelectLabel className="sr-only">Semesters</SelectLabel>
+                    {semesters.map((v) => {
+                      return (
+                        <SelectItem value={v.slice(0, 1)} key={v.slice(0, 1)}>
+                          {v}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectGroup>
                 </SelectContent>
               </Select>
-            )}
+            </div>
 
-            {['3', '4', '5', '6'].includes(selectedSemester) && (
-              <Select
-                value={selectedBranch}
-                onValueChange={(value) => setSelectedBranch(value)}
+            {/* Option 2: Cycle (if sem <= 2) or Branch (if sem > 2) */}
+            <div className="flex w-full max-w-56 flex-col gap-1.5">
+              <label
+                htmlFor={
+                  isFirstYear
+                    ? 'cycle-select'
+                    : isHigherSem
+                    ? 'branch-select'
+                    : 'cycle-branch-disabled'
+                }
+                className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
               >
-                <SelectTrigger className="w-full max-w-56 animate-fade-in transition-all duration-200 hover:border-primary/40" id="branch-select">
-                  <SelectValue placeholder="Select your branch" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel className="sr-only">Branches</SelectLabel>
-                    {branches.map((b) => (
-                      <SelectItem value={b.value} key={b.value}>
-                        {b.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            )}
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                  2
+                </span>
+                {isFirstYear ? 'Cycle' : isHigherSem ? 'Branch' : 'Cycle / Branch'}
+              </label>
+
+              {!selectedSemester ? (
+                <Select disabled>
+                  <SelectTrigger
+                    className="w-full cursor-not-allowed opacity-60"
+                    id="cycle-branch-disabled"
+                  >
+                    <SelectValue placeholder="Select cycle or branch" />
+                  </SelectTrigger>
+                </Select>
+              ) : isFirstYear ? (
+                <Select
+                  value={selectedCycle}
+                  onValueChange={(value) => setSelectedCycle(value)}
+                >
+                  <SelectTrigger
+                    className="w-full animate-fade-in transition-all duration-200 hover:border-primary/40"
+                    id="cycle-select"
+                  >
+                    <SelectValue placeholder="Select the cycle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel className="sr-only">Cycles</SelectLabel>
+                      <SelectItem value="physics">Physics cycle</SelectItem>
+                      <SelectItem value="chemistry">Chemistry cycle</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select
+                  value={selectedBranch}
+                  onValueChange={(value) => setSelectedBranch(value)}
+                >
+                  <SelectTrigger
+                    className="w-full animate-fade-in transition-all duration-200 hover:border-primary/40"
+                    id="branch-select"
+                  >
+                    <SelectValue placeholder="Select your branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel className="sr-only">Branches</SelectLabel>
+                      {branches.map((b) => (
+                        <SelectItem value={b.value} key={b.value}>
+                          {b.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
 
           {/* ── FirstYear Form ── */}
-          {(selectedCycle === 'physics' || selectedCycle === 'chemistry') && (
-            <FirstYear
-              selectedCycle={selectedCycle}
-              selectedSemester={selectedSemester}
-            />
-          )}
+          {isFirstYear &&
+            (selectedCycle === 'physics' || selectedCycle === 'chemistry') && (
+              <FirstYear
+                selectedCycle={selectedCycle}
+                selectedSemester={selectedSemester}
+              />
+            )}
 
-          {['3', '4', '5', '6'].includes(selectedSemester) && selectedBranch && (
+          {/* ── SecondYear / Higher Sem Form ── */}
+          {isHigherSem && selectedBranch && (
             <SecondYear
               selectedBranch={selectedBranch}
               selectedSemester={selectedSemester}
             />
+          )}
+
+          {/* ── Prompt when selection is incomplete ── */}
+          {!(
+            (isFirstYear && (selectedCycle === 'physics' || selectedCycle === 'chemistry')) ||
+            (isHigherSem && selectedBranch)
+          ) && (
+            <div className="animate-fade-in flex flex-col items-center justify-center py-6 text-center text-muted-foreground">
+              <p className="text-xs sm:text-sm">
+                {!selectedSemester
+                  ? 'Select your semester above to get started'
+                  : isFirstYear && !selectedCycle
+                  ? 'Select your cycle to enter marks'
+                  : isHigherSem && !selectedBranch
+                  ? 'Select your branch to enter marks'
+                  : ''}
+              </p>
+            </div>
           )}
         </Card>
 
