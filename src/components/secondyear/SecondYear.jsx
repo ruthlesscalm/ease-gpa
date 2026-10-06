@@ -129,7 +129,6 @@ const SubjectItem = memo(function SubjectItem({
   subject,
   subjectState = {},
   handleInputChange,
-  handleModeToggle,
 }) {
   const isStandardCIA = subject.maxCIA === 30;
 
@@ -138,20 +137,6 @@ const SubjectItem = memo(function SubjectItem({
   const cat1Data = subjectState.cat1 || DEFAULT_FIELD;
   const cat2Data = subjectState.cat2 || DEFAULT_FIELD;
   const cat3Data = subjectState.cat3 || DEFAULT_FIELD;
-
-  // Determine mode: 'cat' by default if standard CIA and either no mode is set or 'cat' is set, or if cat fields are populated
-  const ciaMode = isStandardCIA
-    ? subjectState.ciaMode ||
-      (cat1Data.value !== '' || cat2Data.value !== '' || cat3Data.value !== ''
-        ? 'cat'
-        : ciaData.value !== ''
-          ? 'direct'
-          : 'cat')
-    : 'direct';
-
-  const catSum = calculateCATTotal(cat1Data.value, cat2Data.value, cat3Data.value);
-  const hasCatEntered = cat1Data.value !== '' || cat2Data.value !== '' || cat3Data.value !== '';
-  const isCatInvalid = cat1Data.isInvalid || cat2Data.isInvalid || cat3Data.isInvalid || catSum > 30;
 
   const mseNum = parseFloat(mseData.value);
   const normalizedMSE =
@@ -162,26 +147,38 @@ const SubjectItem = memo(function SubjectItem({
   return (
     <Item
       variant="outline"
-      className="rounded-xl border-border/60 transition-colors duration-200 hover:border-primary/20"
+      className="rounded-xl border-border/60 p-3.5 transition-colors duration-200 hover:border-primary/20"
     >
-      <ItemContent>
-        <ItemTitle className="flex items-center gap-2">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
-            {subject.alias.slice(0, 2)}
+      {/* ── Compact Header (Single Line) ── */}
+      <div className="flex w-full items-center justify-between gap-2 border-b border-border/40 pb-2.5">
+        <div className="flex min-w-0 items-baseline gap-2">
+          <span className="shrink-0 text-sm font-bold tracking-wide text-primary">
+            {subject.alias}
           </span>
-          <span>{subject.alias}</span>
-          <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {subject.credits} cr
+          <span
+            className="truncate text-xs font-medium text-muted-foreground"
+            title={subject.name}
+          >
+            {subject.name}
           </span>
-        </ItemTitle>
-        <ItemDescription className="pl-9">{subject.name}</ItemDescription>
-      </ItemContent>
-      <FieldGroup className="grid basis-full grid-cols-1 gap-3.5 sm:grid-cols-2">
+        </div>
+        <span className="shrink-0 rounded-full bg-muted/80 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+          {subject.credits} cr
+        </span>
+      </div>
+
+      <FieldGroup className="grid basis-full grid-cols-1 gap-3.5 pt-1 sm:grid-cols-2">
         {/* ── MSE Section ── */}
-        <Field data-invalid={mseData.isInvalid} className="flex flex-col justify-between">
+        <Field
+          data-invalid={mseData.isInvalid}
+          className="flex flex-col justify-between"
+        >
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <FieldLabel htmlFor={`mse-${subject.alias}`} className="text-xs font-medium">
+              <FieldLabel
+                htmlFor={`mse-${subject.alias}`}
+                className="text-xs font-medium"
+              >
                 <span className="flex items-center gap-1.5">
                   MSE Marks
                   {mseData.isInvalid && (
@@ -208,8 +205,8 @@ const SubjectItem = memo(function SubjectItem({
               value={mseData.value}
               className={
                 mseData.isInvalid
-                  ? 'border-destructive/50 ring-2 ring-destructive/20'
-                  : ''
+                  ? 'h-8 text-xs border-destructive/50 ring-2 ring-destructive/20'
+                  : 'h-8 text-xs'
               }
               onChange={(e) =>
                 handleInputChange(
@@ -222,7 +219,7 @@ const SubjectItem = memo(function SubjectItem({
             />
           </div>
           {subject.mse ? (
-            <div className="flex items-center justify-between text-[11px] pt-1 text-muted-foreground">
+            <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
               <span>Normalized (to 30):</span>
               <span
                 className={`font-semibold ${
@@ -234,7 +231,7 @@ const SubjectItem = memo(function SubjectItem({
               </span>
             </div>
           ) : (
-            <div className="text-[11px] text-muted-foreground/80 pt-1">
+            <div className="pt-1 text-[11px] text-muted-foreground/80">
               No MSE component
             </div>
           )}
@@ -242,206 +239,196 @@ const SubjectItem = memo(function SubjectItem({
 
         {/* ── CIA Section ── */}
         <Field
-          data-invalid={
-            isStandardCIA && ciaMode === 'cat' ? isCatInvalid : ciaData.isInvalid
-          }
+          data-invalid={ciaData.isInvalid}
           className="flex flex-col justify-between"
         >
           <div>
-            <div className="mb-1.5 flex items-center justify-between gap-1">
-              <FieldLabel htmlFor={`cia-${subject.alias}`} className="text-xs font-medium">
+            <div className="mb-1.5 flex items-center justify-between">
+              <FieldLabel
+                htmlFor={`cia-${subject.alias}`}
+                className="text-xs font-medium"
+              >
                 <span className="flex items-center gap-1.5">
                   CIA Marks
-                  {((isStandardCIA && ciaMode === 'cat' && isCatInvalid) ||
-                    ((!isStandardCIA || ciaMode === 'direct') &&
-                      ciaData.isInvalid)) && (
+                  {ciaData.isInvalid && (
                     <span className="text-[10px] font-semibold text-destructive">
                       Invalid!
                     </span>
                   )}
                 </span>
               </FieldLabel>
-
-              {isStandardCIA ? (
-                <div className="inline-flex items-center rounded-lg bg-muted/80 p-0.5 text-[10px]">
-                  <button
-                    type="button"
-                    onClick={() => handleModeToggle(subject.alias, 'cat')}
-                    className={`rounded px-1.5 py-0.5 font-medium transition-all cursor-pointer ${
-                      ciaMode === 'cat'
-                        ? 'bg-background text-foreground shadow-xs'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    3 CATs
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleModeToggle(subject.alias, 'direct')}
-                    className={`rounded px-1.5 py-0.5 font-medium transition-all cursor-pointer ${
-                      ciaMode === 'direct'
-                        ? 'bg-background text-foreground shadow-xs'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Direct
-                  </button>
-                </div>
-              ) : (
-                <span className="text-[10px] font-medium text-muted-foreground">
-                  Max {subject.maxCIA}
-                </span>
-              )}
+              <span className="text-[10px] font-medium text-muted-foreground">
+                Max {subject.maxCIA}
+              </span>
             </div>
 
-            {isStandardCIA && ciaMode === 'cat' ? (
-              <div className="grid grid-cols-3 gap-1.5">
-                <div>
-                  <label
-                    htmlFor={`cat1-${subject.alias}`}
-                    className="mb-0.5 block text-center text-[10px] font-medium text-muted-foreground"
-                  >
-                    CAT 1
-                  </label>
-                  <Input
-                    id={`cat1-${subject.alias}`}
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="/ 10"
-                    max={10}
-                    min={0}
-                    value={cat1Data.value}
-                    className={`h-8 text-center text-xs ${
-                      cat1Data.isInvalid
-                        ? 'border-destructive/50 ring-2 ring-destructive/20'
-                        : ''
-                    }`}
-                    onChange={(e) =>
-                      handleInputChange(
-                        e.target.value,
-                        'cat1',
-                        subject.alias,
-                        10,
-                      )
-                    }
-                  />
+            {isStandardCIA ? (
+              <div className="space-y-2">
+                {/* 3 CATs Row */}
+                <div className="grid grid-cols-3 gap-1.5">
+                  <div>
+                    <label
+                      htmlFor={`cat1-${subject.alias}`}
+                      className="mb-0.5 block text-center text-[10px] font-medium text-muted-foreground"
+                    >
+                      CAT 1
+                    </label>
+                    <Input
+                      id={`cat1-${subject.alias}`}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="/ 10"
+                      max={10}
+                      min={0}
+                      value={cat1Data.value}
+                      className={`h-8 text-center text-xs ${
+                        cat1Data.isInvalid
+                          ? 'border-destructive/50 ring-2 ring-destructive/20'
+                          : ''
+                      }`}
+                      onChange={(e) =>
+                        handleInputChange(
+                          e.target.value,
+                          'cat1',
+                          subject.alias,
+                          10,
+                        )
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor={`cat2-${subject.alias}`}
+                      className="mb-0.5 block text-center text-[10px] font-medium text-muted-foreground"
+                    >
+                      CAT 2
+                    </label>
+                    <Input
+                      id={`cat2-${subject.alias}`}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="/ 10"
+                      max={10}
+                      min={0}
+                      value={cat2Data.value}
+                      className={`h-8 text-center text-xs ${
+                        cat2Data.isInvalid
+                          ? 'border-destructive/50 ring-2 ring-destructive/20'
+                          : ''
+                      }`}
+                      onChange={(e) =>
+                        handleInputChange(
+                          e.target.value,
+                          'cat2',
+                          subject.alias,
+                          10,
+                        )
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor={`cat3-${subject.alias}`}
+                      className="mb-0.5 block text-center text-[10px] font-medium text-muted-foreground"
+                    >
+                      CAT 3
+                    </label>
+                    <Input
+                      id={`cat3-${subject.alias}`}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="/ 10"
+                      max={10}
+                      min={0}
+                      value={cat3Data.value}
+                      className={`h-8 text-center text-xs ${
+                        cat3Data.isInvalid
+                          ? 'border-destructive/50 ring-2 ring-destructive/20'
+                          : ''
+                      }`}
+                      onChange={(e) =>
+                        handleInputChange(
+                          e.target.value,
+                          'cat3',
+                          subject.alias,
+                          10,
+                        )
+                      }
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label
-                    htmlFor={`cat2-${subject.alias}`}
-                    className="mb-0.5 block text-center text-[10px] font-medium text-muted-foreground"
-                  >
-                    CAT 2
-                  </label>
+
+                {/* Direct / Total Input */}
+                <div className="flex items-center gap-2 pt-0.5">
+                  <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                    Total CIA:
+                  </span>
                   <Input
-                    id={`cat2-${subject.alias}`}
+                    id={`cia-${subject.alias}`}
                     type="text"
                     inputMode="decimal"
-                    placeholder="/ 10"
-                    max={10}
+                    placeholder="or enter total / 30"
+                    max={30}
                     min={0}
-                    value={cat2Data.value}
-                    className={`h-8 text-center text-xs ${
-                      cat2Data.isInvalid
+                    value={ciaData.value}
+                    className={`h-7 text-xs ${
+                      ciaData.isInvalid
                         ? 'border-destructive/50 ring-2 ring-destructive/20'
                         : ''
                     }`}
                     onChange={(e) =>
                       handleInputChange(
                         e.target.value,
-                        'cat2',
+                        'cia',
                         subject.alias,
-                        10,
-                      )
-                    }
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor={`cat3-${subject.alias}`}
-                    className="mb-0.5 block text-center text-[10px] font-medium text-muted-foreground"
-                  >
-                    CAT 3
-                  </label>
-                  <Input
-                    id={`cat3-${subject.alias}`}
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="/ 10"
-                    max={10}
-                    min={0}
-                    value={cat3Data.value}
-                    className={`h-8 text-center text-xs ${
-                      cat3Data.isInvalid
-                        ? 'border-destructive/50 ring-2 ring-destructive/20'
-                        : ''
-                    }`}
-                    onChange={(e) =>
-                      handleInputChange(
-                        e.target.value,
-                        'cat3',
-                        subject.alias,
-                        10,
+                        30,
                       )
                     }
                   />
                 </div>
               </div>
             ) : (
-              <Input
-                id={`cia-${subject.alias}`}
-                type="text"
-                inputMode="decimal"
-                placeholder={`Out of ${subject.maxCIA} Marks`}
-                max={subject.maxCIA}
-                min={0}
-                value={ciaData.value}
-                className={
-                  ciaData.isInvalid
-                    ? 'border-destructive/50 ring-2 ring-destructive/20'
-                    : ''
-                }
-                onChange={(e) =>
-                  handleInputChange(
-                    e.target.value,
-                    'cia',
-                    subject.alias,
-                    subject.maxCIA,
-                  )
-                }
-              />
+              <div className="space-y-2">
+                <Input
+                  id={`cia-${subject.alias}`}
+                  type="text"
+                  inputMode="decimal"
+                  placeholder={`Out of ${subject.maxCIA} Marks`}
+                  max={subject.maxCIA}
+                  min={0}
+                  value={ciaData.value}
+                  className={`h-8 text-xs ${
+                    ciaData.isInvalid
+                      ? 'border-destructive/50 ring-2 ring-destructive/20'
+                      : ''
+                  }`}
+                  onChange={(e) =>
+                    handleInputChange(
+                      e.target.value,
+                      'cia',
+                      subject.alias,
+                      subject.maxCIA,
+                    )
+                  }
+                />
+                <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
+                  <span>Score:</span>
+                  <span
+                    className={`font-semibold ${
+                      ciaData.isInvalid ? 'text-destructive' : 'text-primary'
+                    }`}
+                  >
+                    {ciaData.value !== '' && !ciaData.isInvalid
+                      ? ciaData.value
+                      : '0'}{' '}
+                    <span className="font-normal opacity-70">
+                      / {subject.maxCIA}
+                    </span>
+                  </span>
+                </div>
+              </div>
             )}
           </div>
-
-          {isStandardCIA && ciaMode === 'cat' ? (
-            <div className="flex items-center justify-between text-[11px] pt-1 text-muted-foreground">
-              <span>Total CIA (Sum):</span>
-              <span
-                className={`font-semibold ${
-                  isCatInvalid ? 'text-destructive' : 'text-primary'
-                }`}
-              >
-                {hasCatEntered ? catSum : '0'}{' '}
-                <span className="font-normal opacity-70">/ 30</span>
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between text-[11px] pt-1 text-muted-foreground">
-              <span>Direct Score:</span>
-              <span
-                className={`font-semibold ${
-                  ciaData.isInvalid ? 'text-destructive' : 'text-primary'
-                }`}
-              >
-                {ciaData.value !== '' && !ciaData.isInvalid
-                  ? ciaData.value
-                  : '0'}{' '}
-                <span className="font-normal opacity-70">
-                  / {subject.maxCIA}
-                </span>
-              </span>
-            </div>
-          )}
         </Field>
       </FieldGroup>
     </Item>
@@ -660,7 +647,7 @@ const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA }) => {
         [field]: { value, isInvalid },
       };
 
-      // If one of the CAT fields changed, sync the CIA total
+      // If one of the CAT fields changed, automatically update the CIA total
       if (field === 'cat1' || field === 'cat2' || field === 'cat3') {
         const c1 = field === 'cat1' ? value : currentSubject.cat1?.value || '';
         const c2 = field === 'cat2' ? value : currentSubject.cat2?.value || '';
@@ -691,62 +678,10 @@ const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA }) => {
     });
   }, []);
 
-  const handleModeToggle = useCallback((alias, mode) => {
-    setMarks((prev) => {
-      const currentSubject = prev[alias] || {};
-      const updatedSubject = {
-        ...currentSubject,
-        ciaMode: mode,
-      };
-
-      if (
-        mode === 'direct' &&
-        (!currentSubject.cia?.value || currentSubject.cia?.value === '')
-      ) {
-        const c1 = currentSubject.cat1?.value || '';
-        const c2 = currentSubject.cat2?.value || '';
-        const c3 = currentSubject.cat3?.value || '';
-        const hasAnyCat = c1 !== '' || c2 !== '' || c3 !== '';
-        if (hasAnyCat) {
-          const sum =
-            (parseFloat(c1) || 0) +
-            (parseFloat(c2) || 0) +
-            (parseFloat(c3) || 0);
-          updatedSubject.cia = {
-            value: String(Math.round(sum * 100) / 100),
-            isInvalid: sum > 30,
-          };
-        }
-      } else if (mode === 'cat') {
-        const c1 = currentSubject.cat1?.value || '';
-        const c2 = currentSubject.cat2?.value || '';
-        const c3 = currentSubject.cat3?.value || '';
-        const hasAnyCat = c1 !== '' || c2 !== '' || c3 !== '';
-        if (hasAnyCat) {
-          const sum =
-            (parseFloat(c1) || 0) +
-            (parseFloat(c2) || 0) +
-            (parseFloat(c3) || 0);
-          updatedSubject.cia = {
-            value: String(Math.round(sum * 100) / 100),
-            isInvalid: sum > 30,
-          };
-        }
-      }
-
-      return {
-        ...prev,
-        [alias]: updatedSubject,
-      };
-    });
-  }, []);
-
   // ── No data for this branch+semester yet ──
   if (!subjects) {
     return (
-      <div
-        className="animate-fade-in flex w-full flex-col items-center gap-4 py-12 text-center"
-      >
+      <div className="animate-fade-in flex w-full flex-col items-center gap-4 py-12 text-center">
         <div className="animate-float flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
           <Clock className="h-7 w-7 text-primary" />
         </div>
@@ -766,53 +701,19 @@ const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA }) => {
   // ── Compute results ──
   const results = subjects.map((subject) => {
     const subjectMarks = marks[subject.alias] || {};
-    const isStandardCIA = subject.maxCIA === 30;
 
     const mseData = subjectMarks.mse || DEFAULT_FIELD;
     const ciaData = subjectMarks.cia || DEFAULT_FIELD;
-    const cat1Data = subjectMarks.cat1 || DEFAULT_FIELD;
-    const cat2Data = subjectMarks.cat2 || DEFAULT_FIELD;
-    const cat3Data = subjectMarks.cat3 || DEFAULT_FIELD;
-
-    const ciaMode = isStandardCIA
-      ? subjectMarks.ciaMode ||
-        (cat1Data.value !== '' ||
-        cat2Data.value !== '' ||
-        cat3Data.value !== ''
-          ? 'cat'
-          : ciaData.value !== ''
-            ? 'direct'
-            : 'cat')
-      : 'direct';
-
-    let ciaValue = 0;
-    let hasCiaEntered = false;
-    let isCiaInvalid = false;
-
-    if (isStandardCIA && ciaMode === 'cat') {
-      hasCiaEntered =
-        cat1Data.value !== '' || cat2Data.value !== '' || cat3Data.value !== '';
-      const c1 = parseFloat(cat1Data.value) || 0;
-      const c2 = parseFloat(cat2Data.value) || 0;
-      const c3 = parseFloat(cat3Data.value) || 0;
-      ciaValue = calculateCATTotal(c1, c2, c3);
-      isCiaInvalid =
-        cat1Data.isInvalid ||
-        cat2Data.isInvalid ||
-        cat3Data.isInvalid ||
-        ciaValue > 30;
-    } else {
-      hasCiaEntered = ciaData.value !== '';
-      ciaValue = parseFloat(ciaData.value) || 0;
-      isCiaInvalid = ciaData.isInvalid;
-    }
 
     const mseValue = parseFloat(mseData.value) || 0;
+    const ciaValue = parseFloat(ciaData.value) || 0;
+
     const hasMseEntered = mseData.value !== '';
+    const hasCiaEntered = ciaData.value !== '';
     const hasMarksEntered =
       (subject.mse ? hasMseEntered : false) || hasCiaEntered;
     const hasInvalidMarks =
-      (subject.mse && mseData.isInvalid) || isCiaInvalid;
+      (subject.mse && mseData.isInvalid) || ciaData.isInvalid;
 
     if (subject.sse) {
       const internal = calculateInternal(mseValue, ciaValue, subject);
@@ -895,15 +796,14 @@ const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA }) => {
               subject={subject}
               subjectState={subjectState}
               handleInputChange={handleInputChange}
-              handleModeToggle={handleModeToggle}
             />
           );
         })}
       </form>
 
-      {/* ── Results Section ── */}
+      {/* ── Results Section (Left = SGPA Card, Right = Target Grade Selection) ── */}
       {hasAnyMarks && (
-        <div className="flex flex-col gap-5 lg:gap-6">
+        <div className="flex flex-col gap-5 pt-2 lg:gap-6">
           {/* Section header */}
           <div className="flex items-center gap-2.5 border-t border-border/40 pt-6">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
@@ -911,7 +811,7 @@ const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA }) => {
             </div>
             <div>
               <h2 className="text-sm font-semibold text-foreground">
-                SGPA Prediction
+                SGPA Prediction & Target Grades
               </h2>
               <p className="text-xs text-muted-foreground">
                 Select target grades for exam subjects to predict your SGPA
@@ -919,95 +819,131 @@ const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA }) => {
             </div>
           </div>
 
-          {/* Exam subjects */}
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase lg:col-span-2">
-              Exam Subjects (SSE Required)
-            </span>
-            {results
-              .filter((r) => r.type === 'exam')
-              .map((r) => (
-                <ExamSubjectResult
-                  key={r.alias}
-                  subject={r}
-                  internal={r.internal}
-                  achievableGrades={r.achievableGrades}
-                  targetGrade={r.targetGrade}
-                  sseInfo={r.sseInfo}
-                  onTargetChange={(grade) =>
-                    setTargetGrades((prev) => ({
-                      ...prev,
-                      [r.alias]: grade,
-                    }))
-                  }
-                />
-              ))}
-          </div>
+          {/* Responsive Dashboard: SGPA on Left, Exam Subjects on Right */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* ── Left Column: SGPA Card ── */}
+            <div className="lg:col-span-5 xl:col-span-4">
+              {sgpa !== null ? (
+                <div className="glass sticky top-6 rounded-2xl p-6 text-center">
+                  <div className="mb-1 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                    Predicted SGPA
+                  </div>
+                  <div className="gradient-text text-5xl font-extrabold tracking-tight">
+                    {sgpa.toFixed(2)}
+                  </div>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    Based on {gradedCount} of {totalSubjects} subjects
+                  </div>
 
-          {/* Non-exam subjects */}
-          <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
-            <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase lg:col-span-2">
-              Non-Exam Subjects
-            </span>
-            {results
-              .filter((r) => r.type === 'non-exam')
-              .map((r) =>
-                r.hasMarksEntered && !r.hasInvalidMarks ? (
-                  <NonExamSubjectResult
-                    key={r.alias}
-                    subject={r}
-                    totalMarks={r.totalMarks}
-                    grade={r.grade}
-                    gradePoints={r.gradePoints}
-                  />
-                ) : null,
-              )}
-          </div>
+                  {/* SGPA bar */}
+                  <div className="mx-auto mt-4 h-2.5 max-w-xs overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-primary to-[oklch(0.65_0.20_300)] transition-all duration-500"
+                      style={{ width: `${(sgpa / 10) * 100}%` }}
+                    />
+                  </div>
+                  <div className="mx-auto flex max-w-xs justify-between px-1 pt-1 text-[10px] text-muted-foreground">
+                    <span>0.0</span>
+                    <span>5.0</span>
+                    <span>10.0</span>
+                  </div>
 
-          {/* ── SGPA Card ── */}
-          {sgpa !== null && (
-            <div className="glass rounded-2xl p-6 text-center lg:col-span-2">
-              <div className="mb-1 flex items-center justify-center gap-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                <TrendingUp className="h-3.5 w-3.5" />
-                Predicted SGPA
-              </div>
-              <div className="gradient-text text-5xl font-extrabold tracking-tight">
-                {sgpa.toFixed(2)}
-              </div>
-              <div className="mt-2 text-xs text-muted-foreground">
-                Based on {gradedCount} of {totalSubjects} subjects
-              </div>
+                  {targetSGPA != null && targetSGPA > 0 && (
+                    <div className="mt-4 flex flex-col items-center gap-1 rounded-xl border border-border/80 bg-muted/40 p-3 text-xs">
+                      <span className="text-muted-foreground">
+                        Target SGPA:{' '}
+                        <strong className="text-foreground">
+                          {targetSGPA.toFixed(2)}
+                        </strong>
+                      </span>
+                      <span
+                        className={
+                          sgpa >= targetSGPA
+                            ? 'font-semibold text-emerald-600 dark:text-emerald-400'
+                            : 'font-semibold text-amber-600 dark:text-amber-400'
+                        }
+                      >
+                        {sgpa >= targetSGPA
+                          ? 'Goal Met! 🎉'
+                          : `${(targetSGPA - sgpa).toFixed(2)} pts needed`}
+                      </span>
+                    </div>
+                  )}
 
-              {/* SGPA bar */}
-              <div className="mx-auto mt-4 h-2 max-w-xs overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-primary to-[oklch(0.65_0.20_300)] transition-all duration-500"
-                  style={{ width: `${(sgpa / 10) * 100}%` }}
-                />
-              </div>
-              <div className="mt-1.5 flex justify-between px-1 text-[10px] text-muted-foreground">
-                <span>0</span>
-                <span>10</span>
-              </div>
-
-              {targetSGPA != null && targetSGPA > 0 && (
-                <div className="mt-3 inline-flex flex-wrap items-center justify-center gap-2 rounded-xl border border-border/80 bg-muted/40 px-3.5 py-1.5 text-xs">
-                  <span className="text-muted-foreground">Target SGPA: <strong className="text-foreground">{targetSGPA.toFixed(2)}</strong></span>
-                  <span className="opacity-40">•</span>
-                  <span className={sgpa >= targetSGPA ? "font-semibold text-emerald-600 dark:text-emerald-400" : "font-semibold text-amber-600 dark:text-amber-400"}>
-                    {sgpa >= targetSGPA ? "Goal Met! 🎉" : `${(targetSGPA - sgpa).toFixed(2)} pts needed`}
-                  </span>
+                  {gradedCount === totalSubjects && sgpa >= 9 && (
+                    <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      <Trophy className="h-3.5 w-3.5" />
+                      Outstanding!
+                    </div>
+                  )}
                 </div>
-              )}
-
-              {gradedCount === totalSubjects && sgpa >= 9 && (
-                <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                  <Trophy className="h-3.5 w-3.5" />
-                  Outstanding!
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border/80 bg-muted/15 p-6 text-center text-xs text-muted-foreground">
+                  Select target grades on the right to see your predicted SGPA
                 </div>
               )}
             </div>
-          )}
+
+            {/* ── Right Column: Subject Target Grade Selectors & Breakdowns ── */}
+            <div className="flex flex-col gap-5 lg:col-span-7 xl:col-span-8">
+              {/* Exam subjects */}
+              <div className="flex flex-col gap-3">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Exam Subjects (SSE Required)
+                </span>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {results
+                    .filter((r) => r.type === 'exam')
+                    .map((r) => (
+                      <ExamSubjectResult
+                        key={r.alias}
+                        subject={r}
+                        internal={r.internal}
+                        achievableGrades={r.achievableGrades}
+                        targetGrade={r.targetGrade}
+                        sseInfo={r.sseInfo}
+                        onTargetChange={(grade) =>
+                          setTargetGrades((prev) => ({
+                            ...prev,
+                            [r.alias]: grade,
+                          }))
+                        }
+                      />
+                    ))}
+                </div>
+              </div>
+
+              {/* Non-exam subjects */}
+              {results.some(
+                (r) =>
+                  r.type === 'non-exam' &&
+                  r.hasMarksEntered &&
+                  !r.hasInvalidMarks,
+              ) && (
+                <div className="flex flex-col gap-2 pt-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Non-Exam Subjects
+                  </span>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {results
+                      .filter((r) => r.type === 'non-exam')
+                      .map((r) =>
+                        r.hasMarksEntered && !r.hasInvalidMarks ? (
+                          <NonExamSubjectResult
+                            key={r.alias}
+                            subject={r}
+                            totalMarks={r.totalMarks}
+                            grade={r.grade}
+                            gradePoints={r.gradePoints}
+                          />
+                        ) : null,
+                      )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
