@@ -62,13 +62,12 @@ function ModuleBreakdown({ sseActual, perModule }) {
           return (
             <div
               key={m}
-              className={`flex flex-1 flex-col items-center rounded-lg border px-1.5 py-2 text-center ${
-                isNeeded
+              className={`flex flex-1 flex-col items-center rounded-lg border px-1.5 py-2 text-center ${isNeeded
                   ? isMSECovered
                     ? 'border-primary/30 bg-primary/10'
                     : 'border-foreground/15 bg-foreground/5'
                   : 'border-border/30 bg-muted/20 opacity-50'
-              }`}
+                }`}
             >
               <span
                 className={`text-xs font-bold ${isNeeded ? 'text-foreground' : 'text-muted-foreground'}`}
@@ -222,9 +221,8 @@ const SubjectItem = memo(function SubjectItem({
             <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
               <span>Normalized (to 30):</span>
               <span
-                className={`font-semibold ${
-                  mseData.isInvalid ? 'text-destructive' : 'text-primary'
-                }`}
+                className={`font-semibold ${mseData.isInvalid ? 'text-destructive' : 'text-primary'
+                  }`}
               >
                 {normalizedMSE !== null ? normalizedMSE : '0'}{' '}
                 <span className="font-normal opacity-70">/ 30</span>
@@ -281,11 +279,10 @@ const SubjectItem = memo(function SubjectItem({
                       max={10}
                       min={0}
                       value={cat1Data.value}
-                      className={`h-8 text-center text-xs ${
-                        cat1Data.isInvalid
+                      className={`h-8 text-center text-xs ${cat1Data.isInvalid
                           ? 'border-destructive/50 ring-2 ring-destructive/20'
                           : ''
-                      }`}
+                        }`}
                       onChange={(e) =>
                         handleInputChange(
                           e.target.value,
@@ -311,11 +308,10 @@ const SubjectItem = memo(function SubjectItem({
                       max={10}
                       min={0}
                       value={cat2Data.value}
-                      className={`h-8 text-center text-xs ${
-                        cat2Data.isInvalid
+                      className={`h-8 text-center text-xs ${cat2Data.isInvalid
                           ? 'border-destructive/50 ring-2 ring-destructive/20'
                           : ''
-                      }`}
+                        }`}
                       onChange={(e) =>
                         handleInputChange(
                           e.target.value,
@@ -341,11 +337,10 @@ const SubjectItem = memo(function SubjectItem({
                       max={10}
                       min={0}
                       value={cat3Data.value}
-                      className={`h-8 text-center text-xs ${
-                        cat3Data.isInvalid
+                      className={`h-8 text-center text-xs ${cat3Data.isInvalid
                           ? 'border-destructive/50 ring-2 ring-destructive/20'
                           : ''
-                      }`}
+                        }`}
                       onChange={(e) =>
                         handleInputChange(
                           e.target.value,
@@ -371,11 +366,10 @@ const SubjectItem = memo(function SubjectItem({
                     max={30}
                     min={0}
                     value={ciaData.value}
-                    className={`h-7 text-xs ${
-                      ciaData.isInvalid
+                    className={`h-7 text-xs ${ciaData.isInvalid
                         ? 'border-destructive/50 ring-2 ring-destructive/20'
                         : ''
-                    }`}
+                      }`}
                     onChange={(e) =>
                       handleInputChange(
                         e.target.value,
@@ -397,11 +391,10 @@ const SubjectItem = memo(function SubjectItem({
                   max={subject.maxCIA}
                   min={0}
                   value={ciaData.value}
-                  className={`h-8 text-xs ${
-                    ciaData.isInvalid
+                  className={`h-8 text-xs ${ciaData.isInvalid
                       ? 'border-destructive/50 ring-2 ring-destructive/20'
                       : ''
-                  }`}
+                    }`}
                   onChange={(e) =>
                     handleInputChange(
                       e.target.value,
@@ -414,9 +407,8 @@ const SubjectItem = memo(function SubjectItem({
                 <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
                   <span>Score:</span>
                   <span
-                    className={`font-semibold ${
-                      ciaData.isInvalid ? 'text-destructive' : 'text-primary'
-                    }`}
+                    className={`font-semibold ${ciaData.isInvalid ? 'text-destructive' : 'text-primary'
+                      }`}
                   >
                     {ciaData.value !== '' && !ciaData.isInvalid
                       ? ciaData.value
@@ -921,27 +913,27 @@ const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA }) => {
                   r.hasMarksEntered &&
                   !r.hasInvalidMarks,
               ) && (
-                <div className="flex flex-col gap-2 pt-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Non-Exam Subjects
-                  </span>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {results
-                      .filter((r) => r.type === 'non-exam')
-                      .map((r) =>
-                        r.hasMarksEntered && !r.hasInvalidMarks ? (
-                          <NonExamSubjectResult
-                            key={r.alias}
-                            subject={r}
-                            totalMarks={r.totalMarks}
-                            grade={r.grade}
-                            gradePoints={r.gradePoints}
-                          />
-                        ) : null,
-                      )}
+                  <div className="flex flex-col gap-2 pt-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Non-Exam Subjects
+                    </span>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {results
+                        .filter((r) => r.type === 'non-exam')
+                        .map((r) =>
+                          r.hasMarksEntered && !r.hasInvalidMarks ? (
+                            <NonExamSubjectResult
+                              key={r.alias}
+                              subject={r}
+                              totalMarks={r.totalMarks}
+                              grade={r.grade}
+                              gradePoints={r.gradePoints}
+                            />
+                          ) : null,
+                        )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           </div>
         </div>
