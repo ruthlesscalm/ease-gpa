@@ -1,5 +1,6 @@
 import FirstYear from '@/components/FirstYear';
 import SecondYear from '@/components/secondyear/SecondYear';
+import PredictionSidebar from '@/components/PredictionSidebar';
 import { branches } from '@/components/secondyear/data';
 import { Card } from '@/components/ui/card';
 import {
@@ -73,6 +74,13 @@ const App = () => {
   const [targetCgpa, setTargetCgpa] = useState(
     () => localStorage.getItem(STORAGE_KEYS.TARGET_CGPA) || '',
   );
+  const [calcData, setCalcData] = useState({
+    sgpa: null,
+    results: [],
+    totalCredits: 20,
+    hasAnyMarks: false,
+    subtitle: '',
+  });
   const [showSupport, setShowSupport] = useState(false);
   const [copied, setCopied] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -143,6 +151,13 @@ const App = () => {
     setSelectedBranch('');
     setCurrentCgpa('');
     setTargetCgpa('');
+    setCalcData({
+      sgpa: null,
+      results: [],
+      totalCredits: 20,
+      hasAnyMarks: false,
+      subtitle: '',
+    });
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -170,6 +185,13 @@ const App = () => {
     setSelectedSemester(value);
     setSelectedCycle('');
     setSelectedBranch('');
+    setCalcData({
+      sgpa: null,
+      results: [],
+      totalCredits: 20,
+      hasAnyMarks: false,
+      subtitle: '',
+    });
     // For 1st sem, reset current CGPA as there are no past semesters
     if (value === '1') {
       setCurrentCgpa('');
@@ -291,413 +313,843 @@ const App = () => {
           </div>
         </header>
 
-        {/* ── Configuration Panel ── */}
-        <Card
-          className="glass animate-fade-in-up flex w-full flex-col gap-6 rounded-2xl border border-border/70 p-6 sm:p-8 shadow-xl shadow-black/5"
-          style={{ animationDelay: '0.1s' }}
-        >
-          {/* Card Header (Left-aligned) */}
-          <div className="flex flex-col gap-1 text-left border-b border-border/40 pb-4">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-primary uppercase">
-                <Target className="h-3 w-3" /> Academic Setup
-              </span>
-            </div>
-            <h2 className="text-lg font-bold tracking-tight text-foreground sm:text-xl">
-              Semester &amp; Goal Configuration
-            </h2>
-            <p className="text-xs text-muted-foreground sm:text-sm">
-              Configure your semester, discipline, and target scores to generate your roadmap.
-            </p>
-          </div>
-
-          {/* 4 Options Grid */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-5">
-            {/* 1. Semester */}
-            <div className="flex flex-col gap-1.5 text-left">
-              <label
-                htmlFor="semester-select"
-                className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
+        {/* ── Main Content Area: Splits into 2 vertical sections when marks are entered ── */}
+        {calcData.hasAnyMarks ? (
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12 animate-fade-in">
+            {/* Left Column (8 cols): Semester & Goal Config + Marks */}
+            <div className="flex flex-col gap-6 lg:col-span-8">
+              <Card
+                className="glass flex w-full flex-col gap-6 rounded-2xl border border-border/70 p-6 sm:p-8 shadow-xl shadow-black/5"
               >
-                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
-                  1
-                </span>
-                Semester
-              </label>
-              <Select
-                value={selectedSemester}
-                onValueChange={handleSemesterChange}
-              >
-                <SelectTrigger
-                  className="h-10 w-full rounded-xl bg-background/50 transition-all duration-200 hover:border-primary/40 focus:border-primary"
-                  id="semester-select"
-                >
-                  <SelectValue placeholder="Select semester" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel className="sr-only">Semesters</SelectLabel>
-                    {semesters.map((v) => {
-                      return (
-                        <SelectItem value={v.slice(0, 1)} key={v.slice(0, 1)}>
-                          {v}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <span className="text-[11px] text-muted-foreground">
-                Current term of study
-              </span>
-            </div>
-
-            {/* 2. Cycle (if <= 2) or Branch (if > 2) */}
-            <div className="flex flex-col gap-1.5 text-left">
-              <label
-                htmlFor={
-                  isFirstYear
-                    ? 'cycle-select'
-                    : isHigherSem
-                      ? 'branch-select'
-                      : 'cycle-branch-disabled'
-                }
-                className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
-                  2
-                </span>
-                {isFirstYear ? 'Cycle' : isHigherSem ? 'Branch' : 'Cycle / Branch'}
-              </label>
-
-              {!selectedSemester ? (
-                <Select disabled>
-                  <SelectTrigger
-                    className="h-10 w-full cursor-not-allowed rounded-xl opacity-60"
-                    id="cycle-branch-disabled"
-                  >
-                    <SelectValue placeholder="Select cycle or branch" />
-                  </SelectTrigger>
-                </Select>
-              ) : isFirstYear ? (
-                <Select
-                  value={selectedCycle}
-                  onValueChange={(value) => setSelectedCycle(value)}
-                >
-                  <SelectTrigger
-                    className="h-10 w-full animate-fade-in rounded-xl bg-background/50 transition-all duration-200 hover:border-primary/40 focus:border-primary"
-                    id="cycle-select"
-                  >
-                    <SelectValue placeholder="Select cycle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel className="sr-only">Cycles</SelectLabel>
-                      <SelectItem value="physics">Physics cycle</SelectItem>
-                      <SelectItem value="chemistry">Chemistry cycle</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Select
-                  value={selectedBranch}
-                  onValueChange={(value) => setSelectedBranch(value)}
-                >
-                  <SelectTrigger
-                    className="h-10 w-full animate-fade-in rounded-xl bg-background/50 transition-all duration-200 hover:border-primary/40 focus:border-primary"
-                    id="branch-select"
-                  >
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel className="sr-only">Branches</SelectLabel>
-                      {branches.map((b) => (
-                        <SelectItem value={b.value} key={b.value}>
-                          {b.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              )}
-              <span className="text-[11px] text-muted-foreground">
-                {isFirstYear
-                  ? 'Physics or Chemistry cycle'
-                  : isHigherSem
-                    ? 'Engineering discipline'
-                    : 'Requires semester selection'}
-              </span>
-            </div>
-
-            {/* 3. Current / 1st Sem CGPA */}
-            <div className="flex flex-col gap-1.5 text-left">
-              <label
-                htmlFor="current-cgpa"
-                className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
-                  3
-                </span>
-                {semNum === 2
-                  ? '1st Sem CGPA'
-                  : isHigherSem
-                    ? 'Current CGPA'
-                    : 'Current CGPA'}
-              </label>
-
-              {semNum === 1 ? (
-                <div className="flex h-10 w-full items-center rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 text-xs text-muted-foreground">
-                  Starting semester (N/A)
-                </div>
-              ) : (
-                <input
-                  id="current-cgpa"
-                  type="text"
-                  inputMode="decimal"
-                  placeholder={semNum === 2 ? 'e.g. 8.20 (1st sem)' : 'e.g. 8.15'}
-                  disabled={!selectedSemester}
-                  value={currentCgpa}
-                  onChange={handleCgpaInput(setCurrentCgpa)}
-                  className="h-10 w-full rounded-xl border border-border/80 bg-background/50 px-3 text-sm font-medium transition-all duration-200 hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
-                />
-              )}
-              <span className="text-[11px] text-muted-foreground">
-                {semNum === 2
-                  ? 'Your GPA from 1st semester'
-                  : isHigherSem
-                    ? `Cumulative score before sem ${semNum}`
-                    : semNum === 1
-                      ? 'No prior college GPA'
-                      : 'Select semester first'}
-              </span>
-            </div>
-
-            {/* 4. Target CGPA */}
-            <div className="flex flex-col gap-1.5 text-left">
-              <label
-                htmlFor="target-cgpa"
-                className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
-                  4
-                </span>
-                Target CGPA
-              </label>
-
-              <input
-                id="target-cgpa"
-                type="text"
-                inputMode="decimal"
-                placeholder="e.g. 8.50"
-                disabled={!selectedSemester}
-                value={targetCgpa}
-                onChange={handleCgpaInput(setTargetCgpa)}
-                className="h-10 w-full rounded-xl border border-border/80 bg-background/50 px-3 text-sm font-medium transition-all duration-200 hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
-              />
-              <span className="text-[11px] text-muted-foreground">
-                {selectedSemester
-                  ? `Goal CGPA after sem ${selectedSemester}`
-                  : 'Select semester first'}
-              </span>
-            </div>
-          </div>
-
-          {/* ── Free Target CGPA Slider ── */}
-          {selectedSemester && (
-            <div className="animate-fade-in rounded-xl border border-border/60 bg-muted/20 p-4 sm:p-5">
-              <div className="flex items-center justify-between text-xs font-semibold text-foreground border-b border-border/40 pb-2.5 mb-3">
-                <span className="flex items-center gap-1.5 text-primary">
-                  <Target className="h-3.5 w-3.5" />
-                  Target CGPA Slider
-                </span>
-                <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-primary text-xs">
-                  {targetCgpa && !isNaN(parseFloat(targetCgpa))
-                    ? `${parseFloat(targetCgpa).toFixed(2)} CGPA`
-                    : 'Slide or type above'}
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-2 text-left">
-                <input
-                  type="range"
-                  min="5.0"
-                  max="10.0"
-                  step="0.01"
-                  list="target-slider-ticks"
-                  value={
-                    targetCgpa && !isNaN(parseFloat(targetCgpa))
-                      ? Math.max(5.0, Math.min(10.0, parseFloat(targetCgpa)))
-                      : 7.5
-                  }
-                  onChange={handleSliderSnapChange}
-                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary transition-all hover:opacity-90"
-                />
-                <datalist id="target-slider-ticks">
-                  {SNAP_POINTS.map((pt) => (
-                    <option key={pt} value={pt.toFixed(1)} label={pt.toFixed(1)} />
-                  ))}
-                </datalist>
-                <div className="flex justify-between px-0.5 text-[10px] text-muted-foreground">
-                  {SNAP_POINTS.map((pt) => {
-                    const tick = pt.toFixed(1);
-                    const isSelected =
-                      targetCgpa &&
-                      !isNaN(parseFloat(targetCgpa)) &&
-                      Math.abs(parseFloat(targetCgpa) - pt) < 0.01;
-                    return (
-                      <button
-                        key={tick}
-                        type="button"
-                        onClick={() => setTargetCgpa(pt.toFixed(2))}
-                        className={`hover:text-primary transition-all cursor-pointer ${isSelected ? 'font-bold text-primary scale-110' : ''
-                          }`}
-                      >
-                        {tick}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Target SGPA Insight Banner ── */}
-          {reqSGPAInfo && (() => {
-            const isUnachievable = !reqSGPAInfo.achievable || reqSGPAInfo.requiredSGPA > 10;
-            return (
-              <div
-                className={`animate-fade-in flex flex-col justify-between gap-4 rounded-xl border p-4 sm:p-5 md:flex-row md:items-center transition-all duration-300 ${isUnachievable
-                  ? 'border-red-500/70 bg-red-500/15 dark:bg-red-950/50 dark:border-red-500/60 shadow-lg shadow-red-500/10 ring-1 ring-red-500/30'
-                  : 'border-primary/25 bg-primary/5'
-                  }`}
-              >
-                <div className="flex items-start gap-3.5 text-left">
-                  <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${isUnachievable
-                      ? 'bg-red-500/20 text-red-600 dark:text-red-400 ring-1 ring-red-500/40'
-                      : 'bg-primary/15 text-primary'
-                      }`}
-                  >
-                    {isUnachievable ? (
-                      <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                    ) : (
-                      <TrendingUp className="h-5 w-5" />
-                    )}
+                {/* Card Header (Left-aligned) */}
+                <div className="flex flex-col gap-1 text-left border-b border-border/40 pb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-primary uppercase">
+                      <Target className="h-3 w-3" /> Academic Setup
+                    </span>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-xs font-bold tracking-wider uppercase ${isUnachievable
-                          ? 'text-red-700 dark:text-red-300'
-                          : 'text-primary'
-                          }`}
-                      >
-                        Target Insight
+                  <h2 className="text-lg font-bold tracking-tight text-foreground sm:text-xl">
+                    Semester &amp; Goal Configuration
+                  </h2>
+                  <p className="text-xs text-muted-foreground sm:text-sm">
+                    Configure your semester, discipline, and target scores to generate your roadmap.
+                  </p>
+                </div>
+
+                {/* 4 Options Grid */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-5">
+                  {/* 1. Semester */}
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label
+                      htmlFor="semester-select"
+                      className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
+                    >
+                      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
+                        1
                       </span>
-                      {isUnachievable ? (
-                        <span className="rounded-full bg-red-600 px-2.5 py-0.5 text-[10px] font-black text-white shadow-sm shadow-red-600/30 uppercase tracking-wide">
-                          NOT POSSIBLE (EXCEEDS 10.0)
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                          Achievable
-                        </span>
-                      )}
-                    </div>
-                    <p
-                      className={`mt-1 text-xs sm:text-sm ${isUnachievable
-                        ? 'text-red-900 dark:text-red-200 font-semibold'
-                        : 'text-foreground/80'
-                        }`}
+                      Semester
+                    </label>
+                    <Select
+                      value={selectedSemester}
+                      onValueChange={handleSemesterChange}
                     >
-                      {reqSGPAInfo.explanation}
-                    </p>
+                      <SelectTrigger
+                        className="h-10 w-full rounded-xl bg-background/50 transition-all duration-200 hover:border-primary/40 focus:border-primary"
+                        id="semester-select"
+                      >
+                        <SelectValue placeholder="Select semester" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel className="sr-only">Semesters</SelectLabel>
+                          {semesters.map((v) => {
+                            return (
+                              <SelectItem value={v.slice(0, 1)} key={v.slice(0, 1)}>
+                                {v}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-[11px] text-muted-foreground">
+                      Current term of study
+                    </span>
+                  </div>
+
+                  {/* 2. Cycle (if <= 2) or Branch (if > 2) */}
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label
+                      htmlFor={
+                        isFirstYear
+                          ? 'cycle-select'
+                          : isHigherSem
+                            ? 'branch-select'
+                            : 'cycle-branch-disabled'
+                      }
+                      className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
+                    >
+                      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
+                        2
+                      </span>
+                      {isFirstYear ? 'Cycle' : isHigherSem ? 'Branch' : 'Cycle / Branch'}
+                    </label>
+
+                    {!selectedSemester ? (
+                      <Select disabled>
+                        <SelectTrigger
+                          className="h-10 w-full cursor-not-allowed rounded-xl opacity-60"
+                          id="cycle-branch-disabled"
+                        >
+                          <SelectValue placeholder="Select cycle or branch" />
+                        </SelectTrigger>
+                      </Select>
+                    ) : isFirstYear ? (
+                      <Select
+                        value={selectedCycle}
+                        onValueChange={(value) => setSelectedCycle(value)}
+                      >
+                        <SelectTrigger
+                          className="h-10 w-full animate-fade-in rounded-xl bg-background/50 transition-all duration-200 hover:border-primary/40 focus:border-primary"
+                          id="cycle-select"
+                        >
+                          <SelectValue placeholder="Select cycle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel className="sr-only">Cycles</SelectLabel>
+                            <SelectItem value="physics">Physics cycle</SelectItem>
+                            <SelectItem value="chemistry">Chemistry cycle</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Select
+                        value={selectedBranch}
+                        onValueChange={(value) => setSelectedBranch(value)}
+                      >
+                        <SelectTrigger
+                          className="h-10 w-full animate-fade-in rounded-xl bg-background/50 transition-all duration-200 hover:border-primary/40 focus:border-primary"
+                          id="branch-select"
+                        >
+                          <SelectValue placeholder="Select branch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel className="sr-only">Branches</SelectLabel>
+                            {branches.map((b) => (
+                              <SelectItem value={b.value} key={b.value}>
+                                {b.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <span className="text-[11px] text-muted-foreground">
+                      {isFirstYear
+                        ? 'Physics or Chemistry cycle'
+                        : isHigherSem
+                          ? 'Engineering discipline'
+                          : 'Requires semester selection'}
+                    </span>
+                  </div>
+
+                  {/* 3. Current / 1st Sem CGPA */}
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label
+                      htmlFor="current-cgpa"
+                      className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
+                    >
+                      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
+                        3
+                      </span>
+                      {semNum === 2
+                        ? '1st Sem CGPA'
+                        : isHigherSem
+                          ? 'Current CGPA'
+                          : 'Current CGPA'}
+                    </label>
+
+                    {semNum === 1 ? (
+                      <div className="flex h-10 w-full items-center rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 text-xs text-muted-foreground">
+                        Starting semester (N/A)
+                      </div>
+                    ) : (
+                      <input
+                        id="current-cgpa"
+                        type="text"
+                        inputMode="decimal"
+                        placeholder={semNum === 2 ? 'e.g. 8.20 (1st sem)' : 'e.g. 8.15'}
+                        disabled={!selectedSemester}
+                        value={currentCgpa}
+                        onChange={handleCgpaInput(setCurrentCgpa)}
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background/50 px-3 text-sm font-medium transition-all duration-200 hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+                    )}
+                    <span className="text-[11px] text-muted-foreground">
+                      {semNum === 2
+                        ? 'Your GPA from 1st semester'
+                        : isHigherSem
+                          ? `Cumulative score before sem ${semNum}`
+                          : semNum === 1
+                            ? 'No prior college GPA'
+                            : 'Select semester first'}
+                    </span>
+                  </div>
+
+                  {/* 4. Target CGPA */}
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label
+                      htmlFor="target-cgpa"
+                      className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
+                    >
+                      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
+                        4
+                      </span>
+                      Target CGPA
+                    </label>
+
+                    <input
+                      id="target-cgpa"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="e.g. 8.50"
+                      disabled={!selectedSemester}
+                      value={targetCgpa}
+                      onChange={handleCgpaInput(setTargetCgpa)}
+                      className="h-10 w-full rounded-xl border border-border/80 bg-background/50 px-3 text-sm font-medium transition-all duration-200 hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+                    <span className="text-[11px] text-muted-foreground">
+                      {selectedSemester
+                        ? `Goal CGPA after sem ${selectedSemester}`
+                        : 'Select semester first'}
+                    </span>
                   </div>
                 </div>
 
-                <div
-                  className={`flex shrink-0 items-center gap-4 rounded-xl border px-4 py-2.5 shadow-sm ${isUnachievable
-                    ? 'border-red-500/40 bg-red-500/20 dark:bg-red-950/70 shadow-red-500/10'
-                    : 'border-border/60 bg-card/80'
-                    }`}
-                >
-                  <div className="text-left">
-                    <div
-                      className={`text-[10px] font-bold tracking-wider uppercase ${isUnachievable
-                        ? 'text-red-700 dark:text-red-300'
-                        : 'text-muted-foreground'
-                        }`}
-                    >
-                      Required SGPA
+                {/* ── Free Target CGPA Slider ── */}
+                {selectedSemester && (
+                  <div className="animate-fade-in rounded-xl border border-border/60 bg-muted/20 p-4 sm:p-5">
+                    <div className="flex items-center justify-between text-xs font-semibold text-foreground border-b border-border/40 pb-2.5 mb-3">
+                      <span className="flex items-center gap-1.5 text-primary">
+                        <Target className="h-3.5 w-3.5" />
+                        Target CGPA Slider
+                      </span>
+                      <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-primary text-xs">
+                        {targetCgpa && !isNaN(parseFloat(targetCgpa))
+                          ? `${parseFloat(targetCgpa).toFixed(2)} CGPA`
+                          : 'Slide or type above'}
+                      </span>
                     </div>
-                    <div
-                      className={`text-2xl font-black tracking-tight ${isUnachievable
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-primary'
-                        }`}
-                    >
-                      {reqSGPAInfo.requiredSGPA > 0 ? reqSGPAInfo.requiredSGPA.toFixed(2) : 'Passed'}
+
+                    <div className="flex flex-col gap-2 text-left">
+                      <input
+                        type="range"
+                        min="5.0"
+                        max="10.0"
+                        step="0.01"
+                        list="target-slider-ticks"
+                        value={
+                          targetCgpa && !isNaN(parseFloat(targetCgpa))
+                            ? Math.max(5.0, Math.min(10.0, parseFloat(targetCgpa)))
+                            : 7.5
+                        }
+                        onChange={handleSliderSnapChange}
+                        className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary transition-all hover:opacity-90"
+                      />
+                      <datalist id="target-slider-ticks">
+                        {SNAP_POINTS.map((pt) => (
+                          <option key={pt} value={pt.toFixed(1)} label={pt.toFixed(1)} />
+                        ))}
+                      </datalist>
+                      <div className="flex justify-between px-0.5 text-[10px] text-muted-foreground">
+                        {SNAP_POINTS.map((pt) => {
+                          const tick = pt.toFixed(1);
+                          const isSelected =
+                            targetCgpa &&
+                            !isNaN(parseFloat(targetCgpa)) &&
+                            Math.abs(parseFloat(targetCgpa) - pt) < 0.01;
+                          return (
+                            <button
+                              key={tick}
+                              type="button"
+                              onClick={() => setTargetCgpa(pt.toFixed(2))}
+                              className={`hover:text-primary transition-all cursor-pointer ${isSelected ? 'font-bold text-primary scale-110' : ''
+                                }`}
+                            >
+                              {tick}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                  {reqSGPAInfo.maxPossibleCGPA != null && isUnachievable && (
-                    <div className="border-l border-red-500/40 pl-3.5 text-left">
-                      <div className="text-[10px] font-bold tracking-wider text-red-700/80 dark:text-red-300/80 uppercase">
-                        Max Possible
+                )}
+
+                {/* ── Target SGPA Insight Banner ── */}
+                {reqSGPAInfo && (() => {
+                  const isUnachievable = !reqSGPAInfo.achievable || reqSGPAInfo.requiredSGPA > 10;
+                  return (
+                    <div
+                      className={`animate-fade-in flex flex-col justify-between gap-4 rounded-xl border p-4 sm:p-5 md:flex-row md:items-center transition-all duration-300 ${isUnachievable
+                        ? 'border-red-500/70 bg-red-500/15 dark:bg-red-950/50 dark:border-red-500/60 shadow-lg shadow-red-500/10 ring-1 ring-red-500/30'
+                        : 'border-primary/25 bg-primary/5'
+                        }`}
+                    >
+                      <div className="flex items-start gap-3.5 text-left">
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${isUnachievable
+                            ? 'bg-red-500/20 text-red-600 dark:text-red-400 ring-1 ring-red-500/40'
+                            : 'bg-primary/15 text-primary'
+                            }`}
+                        >
+                          {isUnachievable ? (
+                            <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                          ) : (
+                            <TrendingUp className="h-5 w-5" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-xs font-bold tracking-wider uppercase ${isUnachievable
+                                ? 'text-red-700 dark:text-red-300'
+                                : 'text-primary'
+                                }`}
+                            >
+                              Target Insight
+                            </span>
+                            {isUnachievable ? (
+                              <span className="rounded-full bg-red-600 px-2.5 py-0.5 text-[10px] font-black text-white shadow-sm shadow-red-600/30 uppercase tracking-wide">
+                                NOT POSSIBLE (EXCEEDS 10.0)
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                Achievable
+                              </span>
+                            )}
+                          </div>
+                          <p
+                            className={`mt-1 text-xs sm:text-sm ${isUnachievable
+                              ? 'text-red-900 dark:text-red-200 font-semibold'
+                              : 'text-foreground/80'
+                              }`}
+                          >
+                            {reqSGPAInfo.explanation}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-base font-black text-red-950 dark:text-red-100">
-                        {reqSGPAInfo.maxPossibleCGPA.toFixed(2)}
+
+                      <div
+                        className={`flex shrink-0 items-center gap-4 rounded-xl border px-4 py-2.5 shadow-sm ${isUnachievable
+                          ? 'border-red-500/40 bg-red-500/20 dark:bg-red-950/70 shadow-red-500/10'
+                          : 'border-border/60 bg-card/80'
+                          }`}
+                      >
+                        <div className="text-left">
+                          <div
+                            className={`text-[10px] font-bold tracking-wider uppercase ${isUnachievable
+                              ? 'text-red-700 dark:text-red-300'
+                              : 'text-muted-foreground'
+                              }`}
+                          >
+                            Required SGPA
+                          </div>
+                          <div
+                            className={`text-2xl font-black tracking-tight ${isUnachievable
+                              ? 'text-red-600 dark:text-red-400'
+                              : 'text-primary'
+                              }`}
+                          >
+                            {reqSGPAInfo.requiredSGPA > 0 ? reqSGPAInfo.requiredSGPA.toFixed(2) : 'Passed'}
+                          </div>
+                        </div>
+                        {reqSGPAInfo.maxPossibleCGPA != null && isUnachievable && (
+                          <div className="border-l border-red-500/40 pl-3.5 text-left">
+                            <div className="text-[10px] font-bold tracking-wider text-red-700/80 dark:text-red-300/80 uppercase">
+                              Max Possible
+                            </div>
+                            <div className="text-base font-black text-red-950 dark:text-red-100">
+                              {reqSGPAInfo.maxPossibleCGPA.toFixed(2)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── Guided Next Steps (when form is not ready yet) ── */}
+                {!(
+                  (isFirstYear && (selectedCycle === 'physics' || selectedCycle === 'chemistry')) ||
+                  (isHigherSem && selectedBranch)
+                ) && (
+                    <div className="animate-fade-in flex items-center gap-3.5 rounded-xl border border-dashed border-border/80 bg-muted/15 p-4 sm:p-5 text-left text-sm text-muted-foreground">
+                      <Compass className="h-5 w-5 shrink-0 text-primary" />
+                      <div>
+                        <p className="font-medium text-foreground text-xs sm:text-sm">
+                          {!selectedSemester
+                            ? 'Step 1: Choose your Semester above to start'
+                            : isFirstYear && !selectedCycle
+                              ? 'Step 2: Select your Cycle (Physics or Chemistry) to load subjects'
+                              : isHigherSem && !selectedBranch
+                                ? 'Step 2: Select your Engineering Branch to load subjects'
+                                : 'Complete configuration to unlock calculation'}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Once your stream is selected, you can enter MSE/CIA marks and choose target grades.
+                        </p>
                       </div>
                     </div>
                   )}
-                </div>
-              </div>
-            );
-          })()}
 
-          {/* ── Guided Next Steps (when form is not ready yet) ── */}
-          {!(
-            (isFirstYear && (selectedCycle === 'physics' || selectedCycle === 'chemistry')) ||
-            (isHigherSem && selectedBranch)
-          ) && (
-              <div className="animate-fade-in flex items-center gap-3.5 rounded-xl border border-dashed border-border/80 bg-muted/15 p-4 sm:p-5 text-left text-sm text-muted-foreground">
-                <Compass className="h-5 w-5 shrink-0 text-primary" />
-                <div>
-                  <p className="font-medium text-foreground text-xs sm:text-sm">
-                    {!selectedSemester
-                      ? 'Step 1: Choose your Semester above to start'
-                      : isFirstYear && !selectedCycle
-                        ? 'Step 2: Select your Cycle (Physics or Chemistry) to load subjects'
-                        : isHigherSem && !selectedBranch
-                          ? 'Step 2: Select your Engineering Branch to load subjects'
-                          : 'Complete configuration to unlock calculation'}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Once your stream is selected, you can enter MSE/CIA marks and choose target grades.
-                  </p>
-                </div>
-              </div>
-            )}
+                {/* ── FirstYear Form ── */}
+                {isFirstYear &&
+                  (selectedCycle === 'physics' || selectedCycle === 'chemistry') && (
+                    <FirstYear
+                      selectedCycle={selectedCycle}
+                      selectedSemester={selectedSemester}
+                      targetSGPA={reqSGPAInfo?.requiredSGPA}
+                      onSummaryChange={setCalcData}
+                    />
+                  )}
 
-          {/* ── FirstYear Form ── */}
-          {isFirstYear &&
-            (selectedCycle === 'physics' || selectedCycle === 'chemistry') && (
-              <FirstYear
-                selectedCycle={selectedCycle}
-                selectedSemester={selectedSemester}
+                {/* ── SecondYear / Higher Sem Form ── */}
+                {isHigherSem && selectedBranch && (
+                  <SecondYear
+                    selectedBranch={selectedBranch}
+                    selectedSemester={selectedSemester}
+                    targetSGPA={reqSGPAInfo?.requiredSGPA}
+                    onSummaryChange={setCalcData}
+                  />
+                )}
+              </Card>
+            </div>
+
+            {/* Right Column (4 cols): Sticky Live SGPA Prediction Sidebar */}
+            <div className="lg:sticky lg:top-6 lg:col-span-4 animate-fade-in">
+              <PredictionSidebar
+                sgpa={calcData.sgpa}
+                results={calcData.results}
+                totalCredits={calcData.totalCredits}
                 targetSGPA={reqSGPAInfo?.requiredSGPA}
+                subtitle={calcData.subtitle}
               />
-            )}
+            </div>
+          </div>
+        ) : (
+          <div className="mx-auto w-full max-w-5xl animate-fade-in">
+            <Card
+              className="glass animate-fade-in-up flex w-full flex-col gap-6 rounded-2xl border border-border/70 p-6 sm:p-8 shadow-xl shadow-black/5"
+              style={{ animationDelay: '0.1s' }}
+            >
+              {/* Card Header (Left-aligned) */}
+              <div className="flex flex-col gap-1 text-left border-b border-border/40 pb-4">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-primary uppercase">
+                    <Target className="h-3 w-3" /> Academic Setup
+                  </span>
+                </div>
+                <h2 className="text-lg font-bold tracking-tight text-foreground sm:text-xl">
+                  Semester &amp; Goal Configuration
+                </h2>
+                <p className="text-xs text-muted-foreground sm:text-sm">
+                  Configure your semester, discipline, and target scores to generate your roadmap.
+                </p>
+              </div>
 
-          {/* ── SecondYear / Higher Sem Form ── */}
-          {isHigherSem && selectedBranch && (
-            <SecondYear
-              selectedBranch={selectedBranch}
-              selectedSemester={selectedSemester}
-              targetSGPA={reqSGPAInfo?.requiredSGPA}
-            />
-          )}
-        </Card>
+              {/* 4 Options Grid */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 sm:gap-5">
+                {/* 1. Semester */}
+                <div className="flex flex-col gap-1.5 text-left">
+                  <label
+                    htmlFor="semester-select-single"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
+                      1
+                    </span>
+                    Semester
+                  </label>
+                  <Select
+                    value={selectedSemester}
+                    onValueChange={handleSemesterChange}
+                  >
+                    <SelectTrigger
+                      className="h-10 w-full rounded-xl bg-background/50 transition-all duration-200 hover:border-primary/40 focus:border-primary"
+                      id="semester-select-single"
+                    >
+                      <SelectValue placeholder="Select semester" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel className="sr-only">Semesters</SelectLabel>
+                        {semesters.map((v) => {
+                          return (
+                            <SelectItem value={v.slice(0, 1)} key={v.slice(0, 1)}>
+                              {v}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-[11px] text-muted-foreground">
+                    Current term of study
+                  </span>
+                </div>
+
+                {/* 2. Cycle (if <= 2) or Branch (if > 2) */}
+                <div className="flex flex-col gap-1.5 text-left">
+                  <label
+                    htmlFor={
+                      isFirstYear
+                        ? 'cycle-select-single'
+                        : isHigherSem
+                          ? 'branch-select-single'
+                          : 'cycle-branch-disabled-single'
+                    }
+                    className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
+                      2
+                    </span>
+                    {isFirstYear ? 'Cycle' : isHigherSem ? 'Branch' : 'Cycle / Branch'}
+                  </label>
+
+                  {!selectedSemester ? (
+                    <Select disabled>
+                      <SelectTrigger
+                        className="h-10 w-full cursor-not-allowed rounded-xl opacity-60"
+                        id="cycle-branch-disabled-single"
+                      >
+                        <SelectValue placeholder="Select cycle or branch" />
+                      </SelectTrigger>
+                    </Select>
+                  ) : isFirstYear ? (
+                    <Select
+                      value={selectedCycle}
+                      onValueChange={(value) => setSelectedCycle(value)}
+                    >
+                      <SelectTrigger
+                        className="h-10 w-full animate-fade-in rounded-xl bg-background/50 transition-all duration-200 hover:border-primary/40 focus:border-primary"
+                        id="cycle-select-single"
+                      >
+                        <SelectValue placeholder="Select cycle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel className="sr-only">Cycles</SelectLabel>
+                          <SelectItem value="physics">Physics cycle</SelectItem>
+                          <SelectItem value="chemistry">Chemistry cycle</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Select
+                      value={selectedBranch}
+                      onValueChange={(value) => setSelectedBranch(value)}
+                    >
+                      <SelectTrigger
+                        className="h-10 w-full animate-fade-in rounded-xl bg-background/50 transition-all duration-200 hover:border-primary/40 focus:border-primary"
+                        id="branch-select-single"
+                      >
+                        <SelectValue placeholder="Select branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel className="sr-only">Branches</SelectLabel>
+                          {branches.map((b) => (
+                            <SelectItem value={b.value} key={b.value}>
+                              {b.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <span className="text-[11px] text-muted-foreground">
+                    {isFirstYear
+                      ? 'Physics or Chemistry cycle'
+                      : isHigherSem
+                        ? 'Engineering discipline'
+                        : 'Requires semester selection'}
+                  </span>
+                </div>
+
+                {/* 3. Current / 1st Sem CGPA */}
+                <div className="flex flex-col gap-1.5 text-left">
+                  <label
+                    htmlFor="current-cgpa-single"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
+                      3
+                    </span>
+                    {semNum === 2
+                      ? '1st Sem CGPA'
+                      : isHigherSem
+                        ? 'Current CGPA'
+                        : 'Current CGPA'}
+                  </label>
+
+                  {semNum === 1 ? (
+                    <div className="flex h-10 w-full items-center rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 text-xs text-muted-foreground">
+                      Starting semester (N/A)
+                    </div>
+                  ) : (
+                    <input
+                      id="current-cgpa-single"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder={semNum === 2 ? 'e.g. 8.20 (1st sem)' : 'e.g. 8.15'}
+                      disabled={!selectedSemester}
+                      value={currentCgpa}
+                      onChange={handleCgpaInput(setCurrentCgpa)}
+                      className="h-10 w-full rounded-xl border border-border/80 bg-background/50 px-3 text-sm font-medium transition-all duration-200 hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+                  )}
+                  <span className="text-[11px] text-muted-foreground">
+                    {semNum === 2
+                      ? 'Your GPA from 1st semester'
+                      : isHigherSem
+                        ? `Cumulative score before sem ${semNum}`
+                        : semNum === 1
+                          ? 'No prior college GPA'
+                          : 'Select semester first'}
+                  </span>
+                </div>
+
+                {/* 4. Target CGPA */}
+                <div className="flex flex-col gap-1.5 text-left">
+                  <label
+                    htmlFor="target-cgpa-single"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
+                      4
+                    </span>
+                    Target CGPA
+                  </label>
+
+                  <input
+                    id="target-cgpa-single"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="e.g. 8.50"
+                    disabled={!selectedSemester}
+                    value={targetCgpa}
+                    onChange={handleCgpaInput(setTargetCgpa)}
+                    className="h-10 w-full rounded-xl border border-border/80 bg-background/50 px-3 text-sm font-medium transition-all duration-200 hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                  <span className="text-[11px] text-muted-foreground">
+                    {selectedSemester
+                      ? `Goal CGPA after sem ${selectedSemester}`
+                      : 'Select semester first'}
+                  </span>
+                </div>
+              </div>
+
+              {/* ── Free Target CGPA Slider ── */}
+              {selectedSemester && (
+                <div className="animate-fade-in rounded-xl border border-border/60 bg-muted/20 p-4 sm:p-5">
+                  <div className="flex items-center justify-between text-xs font-semibold text-foreground border-b border-border/40 pb-2.5 mb-3">
+                    <span className="flex items-center gap-1.5 text-primary">
+                      <Target className="h-3.5 w-3.5" />
+                      Target CGPA Slider
+                    </span>
+                    <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-primary text-xs">
+                      {targetCgpa && !isNaN(parseFloat(targetCgpa))
+                        ? `${parseFloat(targetCgpa).toFixed(2)} CGPA`
+                        : 'Slide or type above'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-2 text-left">
+                    <input
+                      type="range"
+                      min="5.0"
+                      max="10.0"
+                      step="0.01"
+                      list="target-slider-ticks-single"
+                      value={
+                        targetCgpa && !isNaN(parseFloat(targetCgpa))
+                          ? Math.max(5.0, Math.min(10.0, parseFloat(targetCgpa)))
+                          : 7.5
+                      }
+                      onChange={handleSliderSnapChange}
+                      className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary transition-all hover:opacity-90"
+                    />
+                    <datalist id="target-slider-ticks-single">
+                      {SNAP_POINTS.map((pt) => (
+                        <option key={pt} value={pt.toFixed(1)} label={pt.toFixed(1)} />
+                      ))}
+                    </datalist>
+                    <div className="flex justify-between px-0.5 text-[10px] text-muted-foreground">
+                      {SNAP_POINTS.map((pt) => {
+                        const tick = pt.toFixed(1);
+                        const isSelected =
+                          targetCgpa &&
+                          !isNaN(parseFloat(targetCgpa)) &&
+                          Math.abs(parseFloat(targetCgpa) - pt) < 0.01;
+                        return (
+                          <button
+                            key={tick}
+                            type="button"
+                            onClick={() => setTargetCgpa(pt.toFixed(2))}
+                            className={`hover:text-primary transition-all cursor-pointer ${isSelected ? 'font-bold text-primary scale-110' : ''
+                              }`}
+                          >
+                            {tick}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Target SGPA Insight Banner ── */}
+              {reqSGPAInfo && (() => {
+                const isUnachievable = !reqSGPAInfo.achievable || reqSGPAInfo.requiredSGPA > 10;
+                return (
+                  <div
+                    className={`animate-fade-in flex flex-col justify-between gap-4 rounded-xl border p-4 sm:p-5 md:flex-row md:items-center transition-all duration-300 ${isUnachievable
+                      ? 'border-red-500/70 bg-red-500/15 dark:bg-red-950/50 dark:border-red-500/60 shadow-lg shadow-red-500/10 ring-1 ring-red-500/30'
+                      : 'border-primary/25 bg-primary/5'
+                      }`}
+                  >
+                    <div className="flex items-start gap-3.5 text-left">
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${isUnachievable
+                          ? 'bg-red-500/20 text-red-600 dark:text-red-400 ring-1 ring-red-500/40'
+                          : 'bg-primary/15 text-primary'
+                          }`}
+                      >
+                        {isUnachievable ? (
+                          <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                        ) : (
+                          <TrendingUp className="h-5 w-5" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`text-xs font-bold tracking-wider uppercase ${isUnachievable
+                              ? 'text-red-700 dark:text-red-300'
+                              : 'text-primary'
+                              }`}
+                          >
+                            Target Insight
+                          </span>
+                          {isUnachievable ? (
+                            <span className="rounded-full bg-red-600 px-2.5 py-0.5 text-[10px] font-black text-white shadow-sm shadow-red-600/30 uppercase tracking-wide">
+                              NOT POSSIBLE (EXCEEDS 10.0)
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                              Achievable
+                            </span>
+                          )}
+                        </div>
+                        <p
+                          className={`mt-1 text-xs sm:text-sm ${isUnachievable
+                            ? 'text-red-900 dark:text-red-200 font-semibold'
+                            : 'text-foreground/80'
+                            }`}
+                        >
+                          {reqSGPAInfo.explanation}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`flex shrink-0 items-center gap-4 rounded-xl border px-4 py-2.5 shadow-sm ${isUnachievable
+                        ? 'border-red-500/40 bg-red-500/20 dark:bg-red-950/70 shadow-red-500/10'
+                        : 'border-border/60 bg-card/80'
+                        }`}
+                    >
+                      <div className="text-left">
+                        <div
+                          className={`text-[10px] font-bold tracking-wider uppercase ${isUnachievable
+                            ? 'text-red-700 dark:text-red-300'
+                            : 'text-muted-foreground'
+                            }`}
+                        >
+                          Required SGPA
+                        </div>
+                        <div
+                          className={`text-2xl font-black tracking-tight ${isUnachievable
+                            ? 'text-red-600 dark:text-red-400'
+                            : 'text-primary'
+                            }`}
+                        >
+                          {reqSGPAInfo.requiredSGPA > 0 ? reqSGPAInfo.requiredSGPA.toFixed(2) : 'Passed'}
+                        </div>
+                      </div>
+                      {reqSGPAInfo.maxPossibleCGPA != null && isUnachievable && (
+                        <div className="border-l border-red-500/40 pl-3.5 text-left">
+                          <div className="text-[10px] font-bold tracking-wider text-red-700/80 dark:text-red-300/80 uppercase">
+                            Max Possible
+                          </div>
+                          <div className="text-base font-black text-red-950 dark:text-red-100">
+                            {reqSGPAInfo.maxPossibleCGPA.toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ── Guided Next Steps (when form is not ready yet) ── */}
+              {!(
+                (isFirstYear && (selectedCycle === 'physics' || selectedCycle === 'chemistry')) ||
+                (isHigherSem && selectedBranch)
+              ) && (
+                  <div className="animate-fade-in flex items-center gap-3.5 rounded-xl border border-dashed border-border/80 bg-muted/15 p-4 sm:p-5 text-left text-sm text-muted-foreground">
+                    <Compass className="h-5 w-5 shrink-0 text-primary" />
+                    <div>
+                      <p className="font-medium text-foreground text-xs sm:text-sm">
+                        {!selectedSemester
+                          ? 'Step 1: Choose your Semester above to start'
+                          : isFirstYear && !selectedCycle
+                            ? 'Step 2: Select your Cycle (Physics or Chemistry) to load subjects'
+                            : isHigherSem && !selectedBranch
+                              ? 'Step 2: Select your Engineering Branch to load subjects'
+                              : 'Complete configuration to unlock calculation'}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Once your stream is selected, you can enter MSE/CIA marks and choose target grades.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+              {/* ── FirstYear Form ── */}
+              {isFirstYear &&
+                (selectedCycle === 'physics' || selectedCycle === 'chemistry') && (
+                  <FirstYear
+                    selectedCycle={selectedCycle}
+                    selectedSemester={selectedSemester}
+                    targetSGPA={reqSGPAInfo?.requiredSGPA}
+                    onSummaryChange={setCalcData}
+                  />
+                )}
+
+              {/* ── SecondYear / Higher Sem Form ── */}
+              {isHigherSem && selectedBranch && (
+                <SecondYear
+                  selectedBranch={selectedBranch}
+                  selectedSemester={selectedSemester}
+                  targetSGPA={reqSGPAInfo?.requiredSGPA}
+                  onSummaryChange={setCalcData}
+                />
+              )}
+            </Card>
+          </div>
+        )}
 
 
 

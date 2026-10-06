@@ -592,7 +592,7 @@ function loadJSON(key, fallback = {}) {
 }
 
 // ── Main Component ──
-const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA }) => {
+const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA, onSummaryChange }) => {
   const subjects = getSubjects(selectedSemester, selectedBranch);
 
   const storagePrefix = `${selectedBranch}-${selectedSemester}`;
@@ -758,131 +758,128 @@ const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA }) => {
     (r) => r.gradePoints != null && !r.hasInvalidMarks,
   );
   const sgpa = validResults.length > 0 ? calculateSGPA(validResults) : null;
-
-  const totalSubjects = subjects.length;
-  const gradedCount = validResults.length;
+  const totalCredits = subjects.reduce((sum, s) => sum + s.credits, 0);
   const hasAnyMarks = results.some((r) => r.hasMarksEntered);
 
+  // Notify parent of calculation summary
+  useEffect(() => {
+    if (onSummaryChange && subjects) {
+      onSummaryChange({
+        sgpa,
+        results,
+        totalCredits,
+        hasAnyMarks,
+        subtitle: `${getBranchLabel(selectedBranch)} — Semester ${selectedSemester}`,
+      });
+    }
+  }, [sgpa, results, totalCredits, hasAnyMarks, selectedBranch, selectedSemester, subjects, onSummaryChange]);
+
   return (
-    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-      {/* ── Left Column (lg:col-span-8): Header + Subject Cards Grid + Target Grades ── */}
-      <div className="flex flex-col gap-6 lg:col-span-8">
-        {/* Marks Header */}
-        <div className="flex items-center gap-2.5 pt-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-            <BookOpen className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">
-              Enter Your Marks
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {getBranchLabel(selectedBranch)} — Semester {selectedSemester}
-            </p>
-          </div>
+    <div className="flex w-full flex-col gap-6">
+      {/* Marks Header */}
+      <div className="flex items-center gap-2.5 pt-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+          <BookOpen className="h-4 w-4 text-primary" />
         </div>
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">
+            Enter Your Marks
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            {getBranchLabel(selectedBranch)} — Semester {selectedSemester}
+          </p>
+        </div>
+      </div>
 
-        {/* Subject Cards Form (2 columns) */}
-        <form className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
-          {subjects.map((subject) => {
-            const subjectState = marks[subject.alias] || {};
-            return (
-              <SubjectItem
-                key={subject.alias}
-                subject={subject}
-                subjectState={subjectState}
-                handleInputChange={handleInputChange}
-              />
-            );
-          })}
-        </form>
+      {/* Subject Cards Form (2 columns) */}
+      <form className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+        {subjects.map((subject) => {
+          const subjectState = marks[subject.alias] || {};
+          return (
+            <SubjectItem
+              key={subject.alias}
+              subject={subject}
+              subjectState={subjectState}
+              handleInputChange={handleInputChange}
+            />
+          );
+        })}
+      </form>
 
-        {/* Target Grades Section (when marks entered) */}
-        {hasAnyMarks && (
-          <div className="flex flex-col gap-4 border-t border-border/40 pt-6">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                <Target className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-foreground">
-                  Target Grades & Exam Breakdown
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Select target grades for exam subjects
-                </p>
-              </div>
+      {/* Target Grades Section (when marks entered) */}
+      {hasAnyMarks && (
+        <div className="flex flex-col gap-4 border-t border-border/40 pt-6">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <Target className="h-4 w-4 text-primary" />
             </div>
-
-            {/* Exam subjects */}
-            <div className="flex flex-col gap-3">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Exam Subjects (SSE Required)
-              </span>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {results
-                  .filter((r) => r.type === 'exam')
-                  .map((r) => (
-                    <ExamSubjectResult
-                      key={r.alias}
-                      subject={r}
-                      internal={r.internal}
-                      achievableGrades={r.achievableGrades}
-                      targetGrade={r.targetGrade}
-                      sseInfo={r.sseInfo}
-                      onTargetChange={(grade) =>
-                        setTargetGrades((prev) => ({
-                          ...prev,
-                          [r.alias]: grade,
-                        }))
-                      }
-                    />
-                  ))}
-              </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">
+                Target Grades & Exam Breakdown
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Select target grades for exam subjects
+              </p>
             </div>
-
-            {/* Non-exam subjects */}
-            {results.some(
-              (r) =>
-                r.type === 'non-exam' &&
-                r.hasMarksEntered &&
-                !r.hasInvalidMarks,
-            ) && (
-              <div className="flex flex-col gap-2 pt-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Non-Exam Subjects
-                </span>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {results
-                    .filter((r) => r.type === 'non-exam')
-                    .map((r) =>
-                      r.hasMarksEntered && !r.hasInvalidMarks ? (
-                        <NonExamSubjectResult
-                          key={r.alias}
-                          subject={r}
-                          totalMarks={r.totalMarks}
-                          grade={r.grade}
-                          gradePoints={r.gradePoints}
-                        />
-                      ) : null,
-                    )}
-                </div>
-              </div>
-            )}
           </div>
-        )}
-      </div>
 
-      {/* ── Right Column (lg:col-span-4): Sticky Live SGPA Prediction Sidebar ── */}
-      <div className="lg:sticky lg:top-6 lg:col-span-4">
-        <PredictionSidebar
-          sgpa={sgpa}
-          results={results}
-          totalCredits={totalCredits}
-          targetSGPA={targetSGPA}
-          subtitle={`${getBranchLabel(selectedBranch)} — Semester ${selectedSemester}`}
-        />
-      </div>
+          {/* Exam subjects */}
+          <div className="flex flex-col gap-3">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Exam Subjects (SSE Required)
+            </span>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {results
+                .filter((r) => r.type === 'exam')
+                .map((r) => (
+                  <ExamSubjectResult
+                    key={r.alias}
+                    subject={r}
+                    internal={r.internal}
+                    achievableGrades={r.achievableGrades}
+                    targetGrade={r.targetGrade}
+                    sseInfo={r.sseInfo}
+                    onTargetChange={(grade) =>
+                      setTargetGrades((prev) => ({
+                        ...prev,
+                        [r.alias]: grade,
+                      }))
+                    }
+                  />
+                ))}
+            </div>
+          </div>
+
+          {/* Non-exam subjects */}
+          {results.some(
+            (r) =>
+              r.type === 'non-exam' &&
+              r.hasMarksEntered &&
+              !r.hasInvalidMarks,
+          ) && (
+            <div className="flex flex-col gap-2 pt-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Non-Exam Subjects
+              </span>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {results
+                  .filter((r) => r.type === 'non-exam')
+                  .map((r) =>
+                    r.hasMarksEntered && !r.hasInvalidMarks ? (
+                      <NonExamSubjectResult
+                        key={r.alias}
+                        subject={r}
+                        totalMarks={r.totalMarks}
+                        grade={r.grade}
+                        gradePoints={r.gradePoints}
+                      />
+                    ) : null,
+                  )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
