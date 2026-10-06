@@ -230,7 +230,7 @@ const App = () => {
         <div className="absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[oklch(0.65_0.15_330_/_0.06)] blur-[50px] dark:bg-[oklch(0.65_0.15_330_/_0.04)]" />
       </div>
 
-      <main className="mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 lg:px-8">
+      <main className="mx-auto flex min-h-[100dvh] w-full max-w-[1600px] flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 lg:px-8">
         {/* ── Header ── */}
         <header className="animate-fade-in-up flex w-full items-center justify-between border-b border-border/40 pb-4">
           <div className="flex items-center gap-3.5">

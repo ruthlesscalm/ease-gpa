@@ -873,183 +873,180 @@ const FirstYear = ({ selectedCycle, selectedSemester, targetSGPA }) => {
   return (
     <>
       {(selectedCycle === 'physics' || selectedCycle === 'chemistry') && (
-        <div className="flex w-full flex-col gap-6">
-          {/* ── Marks Input Section ── */}
-          <div className="flex items-center gap-2.5 pt-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-              <BookOpen className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">
-                Enter Your Marks
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                {selectedCycle === 'physics' ? 'Physics' : 'Chemistry'} Cycle —
-                Semester {selectedSemester}
-              </p>
-            </div>
-          </div>
-
-          <form className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
-            {allSubjects.map((subject, index) => {
-              const subjectState = marks[subject.alias] || {};
-              return (
-                <SubjectItem
-                  key={subject.alias}
-                  subject={subject}
-                  subjectState={subjectState}
-                  handleInputChange={handleInputChange}
-                  index={index}
-                />
-              );
-            })}
-          </form>
-
-          {/* ── Results Section (Left = SGPA Card, Right = Target Grade Selection) ── */}
-          {hasAnyMarks && (
-            <div className="flex flex-col gap-5 pt-2 lg:gap-6">
-              {/* Section header */}
-              <div className="flex items-center gap-2.5 border-t border-border/40 pt-6">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                  <Target className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-foreground">
-                    SGPA Prediction & Target Grades
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    Select target grades for exam subjects to predict your SGPA
-                  </p>
-                </div>
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+          {/* ── Left Column (lg:col-span-8): Header + Subject Cards Grid + Target Grades ── */}
+          <div className="flex flex-col gap-6 lg:col-span-8">
+            {/* Marks Header */}
+            <div className="flex items-center gap-2.5 pt-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                <BookOpen className="h-4 w-4 text-primary" />
               </div>
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">
+                  Enter Your Marks
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {selectedCycle === 'physics' ? 'Physics' : 'Chemistry'} Cycle —
+                  Semester {selectedSemester}
+                </p>
+              </div>
+            </div>
 
-              {/* Responsive Dashboard: Exam Subjects on Left, SGPA Card on Right */}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                {/* ── Left Column: Subject Target Grade Selectors & Breakdowns ── */}
-                <div className="flex flex-col gap-5 lg:col-span-7 xl:col-span-8">
-                  {/* Exam subjects */}
-                  <div className="flex flex-col gap-3">
+            {/* Subject Cards Form (2 columns) */}
+            <form className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+              {allSubjects.map((subject, index) => {
+                const subjectState = marks[subject.alias] || {};
+                return (
+                  <SubjectItem
+                    key={subject.alias}
+                    subject={subject}
+                    subjectState={subjectState}
+                    handleInputChange={handleInputChange}
+                    index={index}
+                  />
+                );
+              })}
+            </form>
+
+            {/* Target Grades Section (when marks entered) */}
+            {hasAnyMarks && (
+              <div className="flex flex-col gap-4 border-t border-border/40 pt-6">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                    <Target className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-foreground">
+                      Target Grades & Exam Breakdown
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      Select target grades for exam subjects
+                    </p>
+                  </div>
+                </div>
+
+                {/* Exam subjects */}
+                <div className="flex flex-col gap-3">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Exam Subjects (SSE Required)
+                  </span>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {results
+                      .filter((r) => r.type === 'exam')
+                      .map((r) => (
+                        <ExamSubjectResult
+                          key={r.alias}
+                          subject={r}
+                          internal={r.internal}
+                          achievableGrades={r.achievableGrades}
+                          targetGrade={r.targetGrade}
+                          sseInfo={r.sseInfo}
+                          onTargetChange={(grade) =>
+                            setTargetGrades((prev) => ({
+                              ...prev,
+                              [r.alias]: grade,
+                            }))
+                          }
+                        />
+                      ))}
+                  </div>
+                </div>
+
+                {/* Non-exam subjects */}
+                {results.some(
+                  (r) =>
+                    r.type === 'non-exam' &&
+                    r.hasMarksEntered &&
+                    !r.hasInvalidMarks,
+                ) && (
+                  <div className="flex flex-col gap-2 pt-2">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Exam Subjects (SSE Required)
+                      Non-Exam Subjects
                     </span>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {results
-                        .filter((r) => r.type === 'exam')
-                        .map((r) => (
-                          <ExamSubjectResult
-                            key={r.alias}
-                            subject={r}
-                            internal={r.internal}
-                            achievableGrades={r.achievableGrades}
-                            targetGrade={r.targetGrade}
-                            sseInfo={r.sseInfo}
-                            onTargetChange={(grade) =>
-                              setTargetGrades((prev) => ({
-                                ...prev,
-                                [r.alias]: grade,
-                              }))
-                            }
-                          />
-                        ))}
+                        .filter((r) => r.type === 'non-exam')
+                        .map((r) =>
+                          r.hasMarksEntered && !r.hasInvalidMarks ? (
+                            <NonExamSubjectResult
+                              key={r.alias}
+                              subject={r}
+                              totalMarks={r.totalMarks}
+                              grade={r.grade}
+                              gradePoints={r.gradePoints}
+                            />
+                          ) : null,
+                        )}
                     </div>
                   </div>
+                )}
+              </div>
+            )}
+          </div>
 
-                  {/* Non-exam subjects */}
-                  {results.some(
-                    (r) =>
-                      r.type === 'non-exam' &&
-                      r.hasMarksEntered &&
-                      !r.hasInvalidMarks,
-                  ) && (
-                      <div className="flex flex-col gap-2 pt-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Non-Exam Subjects
-                        </span>
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                          {results
-                            .filter((r) => r.type === 'non-exam')
-                            .map((r) =>
-                              r.hasMarksEntered && !r.hasInvalidMarks ? (
-                                <NonExamSubjectResult
-                                  key={r.alias}
-                                  subject={r}
-                                  totalMarks={r.totalMarks}
-                                  grade={r.grade}
-                                  gradePoints={r.gradePoints}
-                                />
-                              ) : null,
-                            )}
-                        </div>
-                      </div>
-                    )}
-                </div>
+          {/* ── Right Column (lg:col-span-4): Sticky Predicted SGPA Card (spans the whole page) ── */}
+          <div className="lg:sticky lg:top-6 lg:col-span-4">
+            <div className="glass flex flex-col gap-4 rounded-2xl border border-border/80 p-6 text-center shadow-lg">
+              <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Predicted SGPA
+              </div>
 
-                {/* ── Right Column: SGPA Card ── */}
-                <div className="lg:col-span-5 xl:col-span-4">
-                  {sgpa !== null ? (
-                    <div className="glass sticky top-6 rounded-2xl p-6 text-center">
-                      <div className="mb-1 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                        Predicted SGPA
-                      </div>
-                      <div className="gradient-text text-5xl font-extrabold tracking-tight">
-                        {sgpa.toFixed(2)}
-                      </div>
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        Based on {gradedCount} of {totalSubjects} subjects
-                      </div>
+              <div className="gradient-text text-5xl font-extrabold tracking-tight">
+                {sgpa !== null ? sgpa.toFixed(2) : '0.00'}
+              </div>
 
-                      {/* SGPA bar */}
-                      <div className="mx-auto mt-4 h-2.5 max-w-xs overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-primary to-[oklch(0.65_0.20_300)] transition-all duration-500"
-                          style={{ width: `${(sgpa / 10) * 100}%` }}
-                        />
-                      </div>
-                      <div className="mx-auto flex max-w-xs justify-between px-1 pt-1 text-[10px] text-muted-foreground">
-                        <span>0.0</span>
-                        <span>5.0</span>
-                        <span>10.0</span>
-                      </div>
+              <div className="text-xs text-muted-foreground">
+                {sgpa !== null
+                  ? `Based on ${gradedCount} of ${totalSubjects} subjects`
+                  : 'Enter your marks on the left to calculate SGPA'}
+              </div>
 
-                      {targetSGPA != null && targetSGPA > 0 && (
-                        <div className="mt-4 flex flex-col items-center gap-1 rounded-xl border border-border/80 bg-muted/40 p-3 text-xs">
-                          <span className="text-muted-foreground">
-                            Target SGPA:{' '}
-                            <strong className="text-foreground">
-                              {targetSGPA.toFixed(2)}
-                            </strong>
-                          </span>
-                          <span
-                            className={
-                              sgpa >= targetSGPA
-                                ? 'font-semibold text-emerald-600 dark:text-emerald-400'
-                                : 'font-semibold text-amber-600 dark:text-amber-400'
-                            }
-                          >
-                            {sgpa >= targetSGPA
-                              ? 'Goal Met! 🎉'
-                              : `${(targetSGPA - sgpa).toFixed(2)} pts needed`}
-                          </span>
-                        </div>
-                      )}
+              {/* SGPA bar */}
+              <div className="mx-auto mt-1 h-2.5 w-full max-w-xs overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-[oklch(0.65_0.20_300)] transition-all duration-500"
+                  style={{ width: `${sgpa !== null ? (sgpa / 10) * 100 : 0}%` }}
+                />
+              </div>
+              <div className="mx-auto flex w-full max-w-xs justify-between px-1 text-[10px] text-muted-foreground">
+                <span>0.0</span>
+                <span>5.0</span>
+                <span>10.0</span>
+              </div>
 
-                      {gradedCount === totalSubjects && sgpa >= 9 && (
-                        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                          <Trophy className="h-3.5 w-3.5" />
-                          Outstanding!
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl border border-dashed border-border/80 bg-muted/15 p-6 text-center text-xs text-muted-foreground">
-                      Select target grades on the left to see your predicted SGPA
-                    </div>
+              {targetSGPA != null && targetSGPA > 0 && (
+                <div className="mt-2 flex flex-col items-center gap-1 rounded-xl border border-border/80 bg-muted/40 p-3 text-xs">
+                  <span className="text-muted-foreground">
+                    Target SGPA:{' '}
+                    <strong className="text-foreground">
+                      {targetSGPA.toFixed(2)}
+                    </strong>
+                  </span>
+                  {sgpa !== null && (
+                    <span
+                      className={
+                        sgpa >= targetSGPA
+                          ? 'font-semibold text-emerald-600 dark:text-emerald-400'
+                          : 'font-semibold text-amber-600 dark:text-amber-400'
+                      }
+                    >
+                      {sgpa >= targetSGPA
+                        ? 'Goal Met! 🎉'
+                        : `${(targetSGPA - sgpa).toFixed(2)} pts needed`}
+                    </span>
                   )}
                 </div>
-              </div>
+              )}
+
+              {gradedCount === totalSubjects && sgpa !== null && sgpa >= 9 && (
+                <div className="mt-2 inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                  <Trophy className="h-3.5 w-3.5" />
+                  Outstanding!
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
     </>
