@@ -1,5 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
+import PredictionSidebar from '@/components/PredictionSidebar';
 import {
   Item,
   ItemContent,
@@ -872,68 +873,15 @@ const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA }) => {
         )}
       </div>
 
-      {/* ── Right Column (lg:col-span-4): Sticky Predicted SGPA Card (spans the whole page) ── */}
+      {/* ── Right Column (lg:col-span-4): Sticky Live SGPA Prediction Sidebar ── */}
       <div className="lg:sticky lg:top-6 lg:col-span-4">
-        <div className="glass flex flex-col gap-4 rounded-2xl border border-border/80 p-6 text-center shadow-lg">
-          <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            Predicted SGPA
-          </div>
-
-          <div className="gradient-text text-5xl font-extrabold tracking-tight">
-            {sgpa !== null ? sgpa.toFixed(2) : '0.00'}
-          </div>
-
-          <div className="text-xs text-muted-foreground">
-            {sgpa !== null
-              ? `Based on ${gradedCount} of ${totalSubjects} subjects`
-              : 'Enter your marks on the left to calculate SGPA'}
-          </div>
-
-          {/* SGPA bar */}
-          <div className="mx-auto mt-1 h-2.5 w-full max-w-xs overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-primary to-[oklch(0.65_0.20_300)] transition-all duration-500"
-              style={{ width: `${sgpa !== null ? (sgpa / 10) * 100 : 0}%` }}
-            />
-          </div>
-          <div className="mx-auto flex w-full max-w-xs justify-between px-1 text-[10px] text-muted-foreground">
-            <span>0.0</span>
-            <span>5.0</span>
-            <span>10.0</span>
-          </div>
-
-          {targetSGPA != null && targetSGPA > 0 && (
-            <div className="mt-2 flex flex-col items-center gap-1 rounded-xl border border-border/80 bg-muted/40 p-3 text-xs">
-              <span className="text-muted-foreground">
-                Target SGPA:{' '}
-                <strong className="text-foreground">
-                  {targetSGPA.toFixed(2)}
-                </strong>
-              </span>
-              {sgpa !== null && (
-                <span
-                  className={
-                    sgpa >= targetSGPA
-                      ? 'font-semibold text-emerald-600 dark:text-emerald-400'
-                      : 'font-semibold text-amber-600 dark:text-amber-400'
-                  }
-                >
-                  {sgpa >= targetSGPA
-                    ? 'Goal Met! 🎉'
-                    : `${(targetSGPA - sgpa).toFixed(2)} pts needed`}
-                </span>
-              )}
-            </div>
-          )}
-
-          {gradedCount === totalSubjects && sgpa !== null && sgpa >= 9 && (
-            <div className="mt-2 inline-flex items-center justify-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-              <Trophy className="h-3.5 w-3.5" />
-              Outstanding!
-            </div>
-          )}
-        </div>
+        <PredictionSidebar
+          sgpa={sgpa}
+          results={results}
+          totalCredits={totalCredits}
+          targetSGPA={targetSGPA}
+          subtitle={`${getBranchLabel(selectedBranch)} — Semester ${selectedSemester}`}
+        />
       </div>
     </div>
   );
