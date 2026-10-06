@@ -44,7 +44,7 @@ const semesters = [
   '8th Sem',
 ];
 
-const SNAP_POINTS = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
+const SNAP_POINTS = [5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0];
 const SNAP_THRESHOLD = 0.08;
 
 const STORAGE_KEYS = {
@@ -277,14 +277,14 @@ const App = () => {
             >
               <Sun
                 className={`absolute h-[18px] w-[18px] text-amber-400 transition-all duration-300 ${theme === 'dark'
-                    ? 'rotate-0 scale-100 opacity-100'
-                    : 'rotate-90 scale-0 opacity-0'
+                  ? 'rotate-0 scale-100 opacity-100'
+                  : 'rotate-90 scale-0 opacity-0'
                   }`}
               />
               <Moon
                 className={`absolute h-[18px] w-[18px] text-indigo-500 transition-all duration-300 ${theme === 'dark'
-                    ? '-rotate-90 scale-0 opacity-0'
-                    : 'rotate-0 scale-100 opacity-100'
+                  ? '-rotate-90 scale-0 opacity-0'
+                  : 'rotate-0 scale-100 opacity-100'
                   }`}
               />
             </button>
@@ -509,7 +509,7 @@ const App = () => {
               <div className="flex items-center justify-between text-xs font-semibold text-foreground border-b border-border/40 pb-2.5 mb-3">
                 <span className="flex items-center gap-1.5 text-primary">
                   <Target className="h-3.5 w-3.5" />
-                  Target CGPA Free Slider
+                  Target CGPA Slider
                 </span>
                 <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-primary text-xs">
                   {targetCgpa && !isNaN(parseFloat(targetCgpa))
@@ -550,9 +550,8 @@ const App = () => {
                         key={tick}
                         type="button"
                         onClick={() => setTargetCgpa(pt.toFixed(2))}
-                        className={`hover:text-primary transition-all cursor-pointer ${
-                          isSelected ? 'font-bold text-primary scale-110' : ''
-                        }`}
+                        className={`hover:text-primary transition-all cursor-pointer ${isSelected ? 'font-bold text-primary scale-110' : ''
+                          }`}
                       >
                         {tick}
                       </button>
@@ -568,19 +567,17 @@ const App = () => {
             const isUnachievable = !reqSGPAInfo.achievable || reqSGPAInfo.requiredSGPA > 10;
             return (
               <div
-                className={`animate-fade-in flex flex-col justify-between gap-4 rounded-xl border p-4 sm:p-5 md:flex-row md:items-center transition-all duration-300 ${
-                  isUnachievable
-                    ? 'border-red-500/70 bg-red-500/15 dark:bg-red-950/50 dark:border-red-500/60 shadow-lg shadow-red-500/10 ring-1 ring-red-500/30'
-                    : 'border-primary/25 bg-primary/5'
-                }`}
+                className={`animate-fade-in flex flex-col justify-between gap-4 rounded-xl border p-4 sm:p-5 md:flex-row md:items-center transition-all duration-300 ${isUnachievable
+                  ? 'border-red-500/70 bg-red-500/15 dark:bg-red-950/50 dark:border-red-500/60 shadow-lg shadow-red-500/10 ring-1 ring-red-500/30'
+                  : 'border-primary/25 bg-primary/5'
+                  }`}
               >
                 <div className="flex items-start gap-3.5 text-left">
                   <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${
-                      isUnachievable
-                        ? 'bg-red-500/20 text-red-600 dark:text-red-400 ring-1 ring-red-500/40'
-                        : 'bg-primary/15 text-primary'
-                    }`}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${isUnachievable
+                      ? 'bg-red-500/20 text-red-600 dark:text-red-400 ring-1 ring-red-500/40'
+                      : 'bg-primary/15 text-primary'
+                      }`}
                   >
                     {isUnachievable ? (
                       <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -591,11 +588,10 @@ const App = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <span
-                        className={`text-xs font-bold tracking-wider uppercase ${
-                          isUnachievable
-                            ? 'text-red-700 dark:text-red-300'
-                            : 'text-primary'
-                        }`}
+                        className={`text-xs font-bold tracking-wider uppercase ${isUnachievable
+                          ? 'text-red-700 dark:text-red-300'
+                          : 'text-primary'
+                          }`}
                       >
                         Target Insight
                       </span>
@@ -610,11 +606,10 @@ const App = () => {
                       )}
                     </div>
                     <p
-                      className={`mt-1 text-xs sm:text-sm ${
-                        isUnachievable
-                          ? 'text-red-900 dark:text-red-200 font-semibold'
-                          : 'text-foreground/80'
-                      }`}
+                      className={`mt-1 text-xs sm:text-sm ${isUnachievable
+                        ? 'text-red-900 dark:text-red-200 font-semibold'
+                        : 'text-foreground/80'
+                        }`}
                     >
                       {reqSGPAInfo.explanation}
                     </p>
@@ -622,28 +617,25 @@ const App = () => {
                 </div>
 
                 <div
-                  className={`flex shrink-0 items-center gap-4 rounded-xl border px-4 py-2.5 shadow-sm ${
-                    isUnachievable
-                      ? 'border-red-500/40 bg-red-500/20 dark:bg-red-950/70 shadow-red-500/10'
-                      : 'border-border/60 bg-card/80'
-                  }`}
+                  className={`flex shrink-0 items-center gap-4 rounded-xl border px-4 py-2.5 shadow-sm ${isUnachievable
+                    ? 'border-red-500/40 bg-red-500/20 dark:bg-red-950/70 shadow-red-500/10'
+                    : 'border-border/60 bg-card/80'
+                    }`}
                 >
                   <div className="text-left">
                     <div
-                      className={`text-[10px] font-bold tracking-wider uppercase ${
-                        isUnachievable
-                          ? 'text-red-700 dark:text-red-300'
-                          : 'text-muted-foreground'
-                      }`}
+                      className={`text-[10px] font-bold tracking-wider uppercase ${isUnachievable
+                        ? 'text-red-700 dark:text-red-300'
+                        : 'text-muted-foreground'
+                        }`}
                     >
                       Required SGPA
                     </div>
                     <div
-                      className={`text-2xl font-black tracking-tight ${
-                        isUnachievable
-                          ? 'text-red-600 dark:text-red-400'
-                          : 'text-primary'
-                      }`}
+                      className={`text-2xl font-black tracking-tight ${isUnachievable
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-primary'
+                        }`}
                     >
                       {reqSGPAInfo.requiredSGPA > 0 ? reqSGPAInfo.requiredSGPA.toFixed(2) : 'Passed'}
                     </div>
