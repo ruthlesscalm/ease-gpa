@@ -27,6 +27,7 @@ import {
   TrendingUp,
   Sparkles,
   Compass,
+  AlertTriangle,
 } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
 
@@ -39,21 +40,12 @@ const semesters = [
   '4th Sem',
   '5th Sem',
   '6th Sem',
+  '7th Sem',
+  '8th Sem',
 ];
 
-const CGPA_OPTIONS = [
-  '5.0',
-  '5.5',
-  '6.0',
-  '6.5',
-  '7.0',
-  '7.5',
-  '8.0',
-  '8.5',
-  '9.0',
-  '9.5',
-  '10.0',
-];
+const SNAP_POINTS = [5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
+const SNAP_THRESHOLD = 0.08;
 
 const STORAGE_KEYS = {
   SEMESTER: 'ease-gpa-semester',
@@ -93,6 +85,34 @@ const App = () => {
     } catch (err) {
       console.error('Failed to copy', err);
     }
+  };
+
+  // Restrict CGPA input: only valid decimal numbers, strictly clamped between 0 and 10
+  const handleCgpaInput = (setter) => (e) => {
+    const raw = e.target.value;
+    if (raw === '') {
+      setter('');
+      return;
+    }
+    // Only allow digits and at most one decimal point
+    if (!/^\d*\.?\d*$/.test(raw)) {
+      return;
+    }
+    const num = parseFloat(raw);
+    if (!isNaN(num) && num > 10) {
+      setter('10');
+      return;
+    }
+    setter(raw);
+  };
+
+  // Slider handler that snaps smoothly to whole numbers while retaining free movement
+  const handleSliderSnapChange = (e) => {
+    const raw = parseFloat(e.target.value);
+    if (isNaN(raw)) return;
+    const snap = SNAP_POINTS.find((pt) => Math.abs(raw - pt) <= SNAP_THRESHOLD);
+    const val = snap !== undefined ? snap : raw;
+    setTargetCgpa(val.toFixed(2));
   };
 
   // Persist selections to localStorage
@@ -256,18 +276,16 @@ const App = () => {
               className="group relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-border bg-card/60 backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 active:scale-95"
             >
               <Sun
-                className={`absolute h-[18px] w-[18px] text-amber-400 transition-all duration-300 ${
-                  theme === 'dark'
+                className={`absolute h-[18px] w-[18px] text-amber-400 transition-all duration-300 ${theme === 'dark'
                     ? 'rotate-0 scale-100 opacity-100'
                     : 'rotate-90 scale-0 opacity-0'
-                }`}
+                  }`}
               />
               <Moon
-                className={`absolute h-[18px] w-[18px] text-indigo-500 transition-all duration-300 ${
-                  theme === 'dark'
+                className={`absolute h-[18px] w-[18px] text-indigo-500 transition-all duration-300 ${theme === 'dark'
                     ? '-rotate-90 scale-0 opacity-0'
                     : 'rotate-0 scale-100 opacity-100'
-                }`}
+                  }`}
               />
             </button>
           </div>
@@ -341,8 +359,8 @@ const App = () => {
                   isFirstYear
                     ? 'cycle-select'
                     : isHigherSem
-                    ? 'branch-select'
-                    : 'cycle-branch-disabled'
+                      ? 'branch-select'
+                      : 'cycle-branch-disabled'
                 }
                 className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
               >
@@ -407,15 +425,15 @@ const App = () => {
                 {isFirstYear
                   ? 'Physics or Chemistry cycle'
                   : isHigherSem
-                  ? 'Engineering discipline'
-                  : 'Requires semester selection'}
+                    ? 'Engineering discipline'
+                    : 'Requires semester selection'}
               </span>
             </div>
 
             {/* 3. Current / 1st Sem CGPA */}
             <div className="flex flex-col gap-1.5 text-left">
               <label
-                htmlFor="current-cgpa-select"
+                htmlFor="current-cgpa"
                 className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
               >
                 <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
@@ -424,72 +442,41 @@ const App = () => {
                 {semNum === 2
                   ? '1st Sem CGPA'
                   : isHigherSem
-                  ? 'Current CGPA'
-                  : 'Current CGPA'}
+                    ? 'Current CGPA'
+                    : 'Current CGPA'}
               </label>
 
-              {!selectedSemester ? (
-                <Select disabled>
-                  <SelectTrigger
-                    className="h-10 w-full cursor-not-allowed rounded-xl opacity-60"
-                    id="current-cgpa-select"
-                  >
-                    <SelectValue placeholder="Select semester first" />
-                  </SelectTrigger>
-                </Select>
-              ) : semNum === 1 ? (
-                <Select disabled>
-                  <SelectTrigger
-                    className="h-10 w-full cursor-not-allowed rounded-xl opacity-60"
-                    id="current-cgpa-select"
-                  >
-                    <SelectValue placeholder="Starting semester (N/A)" />
-                  </SelectTrigger>
-                </Select>
+              {semNum === 1 ? (
+                <div className="flex h-10 w-full items-center rounded-xl border border-dashed border-border/80 bg-muted/20 px-3 text-xs text-muted-foreground">
+                  Starting semester (N/A)
+                </div>
               ) : (
-                <Select
+                <input
+                  id="current-cgpa"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder={semNum === 2 ? 'e.g. 8.20 (1st sem)' : 'e.g. 8.15'}
+                  disabled={!selectedSemester}
                   value={currentCgpa}
-                  onValueChange={(val) => setCurrentCgpa(val)}
-                >
-                  <SelectTrigger
-                    className="h-10 w-full animate-fade-in rounded-xl bg-background/50 transition-all duration-200 hover:border-primary/40 focus:border-primary"
-                    id="current-cgpa-select"
-                  >
-                    <SelectValue
-                      placeholder={
-                        semNum === 2 ? 'Select 1st sem CGPA' : 'Select current CGPA'
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel className="text-xs font-semibold text-muted-foreground">
-                        CGPA (0.5 Step from 5.0)
-                      </SelectLabel>
-                      {CGPA_OPTIONS.map((val) => (
-                        <SelectItem key={val} value={val}>
-                          {val} CGPA
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                  onChange={handleCgpaInput(setCurrentCgpa)}
+                  className="h-10 w-full rounded-xl border border-border/80 bg-background/50 px-3 text-sm font-medium transition-all duration-200 hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+                />
               )}
               <span className="text-[11px] text-muted-foreground">
                 {semNum === 2
                   ? 'Your GPA from 1st semester'
                   : isHigherSem
-                  ? `Cumulative score before sem ${semNum}`
-                  : semNum === 1
-                  ? 'No prior college GPA'
-                  : 'Select semester first'}
+                    ? `Cumulative score before sem ${semNum}`
+                    : semNum === 1
+                      ? 'No prior college GPA'
+                      : 'Select semester first'}
               </span>
             </div>
 
             {/* 4. Target CGPA */}
             <div className="flex flex-col gap-1.5 text-left">
               <label
-                htmlFor="target-cgpa-select"
+                htmlFor="target-cgpa"
                 className="flex items-center gap-1.5 text-xs font-semibold text-foreground"
               >
                 <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold text-primary">
@@ -498,40 +485,16 @@ const App = () => {
                 Target CGPA
               </label>
 
-              {!selectedSemester ? (
-                <Select disabled>
-                  <SelectTrigger
-                    className="h-10 w-full cursor-not-allowed rounded-xl opacity-60"
-                    id="target-cgpa-select"
-                  >
-                    <SelectValue placeholder="Select semester first" />
-                  </SelectTrigger>
-                </Select>
-              ) : (
-                <Select
-                  value={targetCgpa}
-                  onValueChange={(val) => setTargetCgpa(val)}
-                >
-                  <SelectTrigger
-                    className="h-10 w-full animate-fade-in rounded-xl bg-background/50 transition-all duration-200 hover:border-primary/40 focus:border-primary"
-                    id="target-cgpa-select"
-                  >
-                    <SelectValue placeholder="Select target CGPA" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel className="text-xs font-semibold text-muted-foreground">
-                        Target CGPA (0.5 Step from 5.0)
-                      </SelectLabel>
-                      {CGPA_OPTIONS.map((val) => (
-                        <SelectItem key={val} value={val}>
-                          {val} CGPA
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              )}
+              <input
+                id="target-cgpa"
+                type="text"
+                inputMode="decimal"
+                placeholder="e.g. 8.50"
+                disabled={!selectedSemester}
+                value={targetCgpa}
+                onChange={handleCgpaInput(setTargetCgpa)}
+                className="h-10 w-full rounded-xl border border-border/80 bg-background/50 px-3 text-sm font-medium transition-all duration-200 hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+              />
               <span className="text-[11px] text-muted-foreground">
                 {selectedSemester
                   ? `Goal CGPA after sem ${selectedSemester}`
@@ -540,167 +503,189 @@ const App = () => {
             </div>
           </div>
 
-          {/* ── Interactive CGPA Sliders (0.5 Step from 5.0 CGPA) ── */}
+          {/* ── Free Target CGPA Slider ── */}
           {selectedSemester && (
             <div className="animate-fade-in rounded-xl border border-border/60 bg-muted/20 p-4 sm:p-5">
-              <div className="flex items-center justify-between text-xs font-semibold text-foreground border-b border-border/40 pb-2.5 mb-3.5">
+              <div className="flex items-center justify-between text-xs font-semibold text-foreground border-b border-border/40 pb-2.5 mb-3">
                 <span className="flex items-center gap-1.5 text-primary">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  CGPA Slider Controls (0.5 Step, 5.0 – 10.0 CGPA)
+                  <Target className="h-3.5 w-3.5" />
+                  Target CGPA Free Slider
                 </span>
-                <span className="text-[11px] font-normal text-muted-foreground hidden sm:inline">
-                  Synchronized with dropdowns above
+                <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-primary text-xs">
+                  {targetCgpa && !isNaN(parseFloat(targetCgpa))
+                    ? `${parseFloat(targetCgpa).toFixed(2)} CGPA`
+                    : 'Slide or type above'}
                 </span>
               </div>
 
-              <div className={`grid grid-cols-1 ${semNum > 1 ? 'md:grid-cols-2' : ''} gap-5 sm:gap-6`}>
-                {/* Current CGPA slider (if sem >= 2) */}
-                {semNum > 1 && (
-                  <div className="flex flex-col gap-2 text-left">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-muted-foreground">
-                        {semNum === 2 ? '1st Sem CGPA Slider' : 'Current CGPA Slider'}:
-                      </span>
-                      <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-primary">
-                        {currentCgpa ? `${parseFloat(currentCgpa).toFixed(1)} CGPA` : 'Not set'}
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="5.0"
-                      max="10.0"
-                      step="0.5"
-                      value={currentCgpa || '5.0'}
-                      onChange={(e) => setCurrentCgpa(parseFloat(e.target.value).toFixed(1))}
-                      className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary transition-all hover:opacity-90"
-                    />
-                    <div className="flex justify-between px-0.5 text-[10px] text-muted-foreground">
-                      {CGPA_OPTIONS.map((opt, i) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setCurrentCgpa(opt)}
-                          className={`hover:text-primary transition-colors cursor-pointer ${
-                            currentCgpa === opt ? 'font-bold text-primary' : ''
-                          } ${i % 2 === 0 ? '' : 'hidden sm:inline'}`}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Target CGPA slider */}
-                <div className="flex flex-col gap-2 text-left">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-muted-foreground">Target CGPA Slider:</span>
-                    <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-primary">
-                      {targetCgpa ? `${parseFloat(targetCgpa).toFixed(1)} CGPA` : 'Not set'}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="5.0"
-                    max="10.0"
-                    step="0.5"
-                    value={targetCgpa || '8.5'}
-                    onChange={(e) => setTargetCgpa(parseFloat(e.target.value).toFixed(1))}
-                    className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary transition-all hover:opacity-90"
-                  />
-                  <div className="flex justify-between px-0.5 text-[10px] text-muted-foreground">
-                    {CGPA_OPTIONS.map((opt, i) => (
+              <div className="flex flex-col gap-2 text-left">
+                <input
+                  type="range"
+                  min="5.0"
+                  max="10.0"
+                  step="0.01"
+                  list="target-slider-ticks"
+                  value={
+                    targetCgpa && !isNaN(parseFloat(targetCgpa))
+                      ? Math.max(5.0, Math.min(10.0, parseFloat(targetCgpa)))
+                      : 7.5
+                  }
+                  onChange={handleSliderSnapChange}
+                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary transition-all hover:opacity-90"
+                />
+                <datalist id="target-slider-ticks">
+                  {SNAP_POINTS.map((pt) => (
+                    <option key={pt} value={pt.toFixed(1)} label={pt.toFixed(1)} />
+                  ))}
+                </datalist>
+                <div className="flex justify-between px-0.5 text-[10px] text-muted-foreground">
+                  {SNAP_POINTS.map((pt) => {
+                    const tick = pt.toFixed(1);
+                    const isSelected =
+                      targetCgpa &&
+                      !isNaN(parseFloat(targetCgpa)) &&
+                      Math.abs(parseFloat(targetCgpa) - pt) < 0.01;
+                    return (
                       <button
-                        key={opt}
+                        key={tick}
                         type="button"
-                        onClick={() => setTargetCgpa(opt)}
-                        className={`hover:text-primary transition-colors cursor-pointer ${
-                          targetCgpa === opt ? 'font-bold text-primary' : ''
-                        } ${i % 2 === 0 ? '' : 'hidden sm:inline'}`}
+                        onClick={() => setTargetCgpa(pt.toFixed(2))}
+                        className={`hover:text-primary transition-all cursor-pointer ${
+                          isSelected ? 'font-bold text-primary scale-110' : ''
+                        }`}
                       >
-                        {opt}
+                        {tick}
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           )}
 
           {/* ── Target SGPA Insight Banner ── */}
-          {reqSGPAInfo && (
-            <div className="animate-fade-in flex flex-col justify-between gap-4 rounded-xl border border-primary/25 bg-primary/5 p-4 sm:p-5 md:flex-row md:items-center">
-              <div className="flex items-start gap-3.5 text-left">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary shadow-sm">
-                  <TrendingUp className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold tracking-wider text-primary uppercase">
-                      Target Insight
-                    </span>
-                    {reqSGPAInfo.achievable ? (
-                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                        Achievable
-                      </span>
+          {reqSGPAInfo && (() => {
+            const isUnachievable = !reqSGPAInfo.achievable || reqSGPAInfo.requiredSGPA > 10;
+            return (
+              <div
+                className={`animate-fade-in flex flex-col justify-between gap-4 rounded-xl border p-4 sm:p-5 md:flex-row md:items-center transition-all duration-300 ${
+                  isUnachievable
+                    ? 'border-red-500/70 bg-red-500/15 dark:bg-red-950/50 dark:border-red-500/60 shadow-lg shadow-red-500/10 ring-1 ring-red-500/30'
+                    : 'border-primary/25 bg-primary/5'
+                }`}
+              >
+                <div className="flex items-start gap-3.5 text-left">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${
+                      isUnachievable
+                        ? 'bg-red-500/20 text-red-600 dark:text-red-400 ring-1 ring-red-500/40'
+                        : 'bg-primary/15 text-primary'
+                    }`}
+                  >
+                    {isUnachievable ? (
+                      <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
                     ) : (
-                      <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive">
-                        Exceeds 10.0
-                      </span>
+                      <TrendingUp className="h-5 w-5" />
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-foreground/80 sm:text-sm">
-                    {reqSGPAInfo.explanation}
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-xs font-bold tracking-wider uppercase ${
+                          isUnachievable
+                            ? 'text-red-700 dark:text-red-300'
+                            : 'text-primary'
+                        }`}
+                      >
+                        Target Insight
+                      </span>
+                      {isUnachievable ? (
+                        <span className="rounded-full bg-red-600 px-2.5 py-0.5 text-[10px] font-black text-white shadow-sm shadow-red-600/30 uppercase tracking-wide">
+                          NOT POSSIBLE (EXCEEDS 10.0)
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                          Achievable
+                        </span>
+                      )}
+                    </div>
+                    <p
+                      className={`mt-1 text-xs sm:text-sm ${
+                        isUnachievable
+                          ? 'text-red-900 dark:text-red-200 font-semibold'
+                          : 'text-foreground/80'
+                      }`}
+                    >
+                      {reqSGPAInfo.explanation}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex shrink-0 items-center gap-4 rounded-xl border border-border/60 bg-card/80 px-4 py-2.5 shadow-sm">
-                <div className="text-left">
-                  <div className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                    Required SGPA
+                <div
+                  className={`flex shrink-0 items-center gap-4 rounded-xl border px-4 py-2.5 shadow-sm ${
+                    isUnachievable
+                      ? 'border-red-500/40 bg-red-500/20 dark:bg-red-950/70 shadow-red-500/10'
+                      : 'border-border/60 bg-card/80'
+                  }`}
+                >
+                  <div className="text-left">
+                    <div
+                      className={`text-[10px] font-bold tracking-wider uppercase ${
+                        isUnachievable
+                          ? 'text-red-700 dark:text-red-300'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      Required SGPA
+                    </div>
+                    <div
+                      className={`text-2xl font-black tracking-tight ${
+                        isUnachievable
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-primary'
+                      }`}
+                    >
+                      {reqSGPAInfo.requiredSGPA > 0 ? reqSGPAInfo.requiredSGPA.toFixed(2) : 'Passed'}
+                    </div>
                   </div>
-                  <div className="text-2xl font-black tracking-tight text-primary">
-                    {reqSGPAInfo.requiredSGPA > 0 ? reqSGPAInfo.requiredSGPA.toFixed(2) : 'Passed'}
-                  </div>
+                  {reqSGPAInfo.maxPossibleCGPA != null && isUnachievable && (
+                    <div className="border-l border-red-500/40 pl-3.5 text-left">
+                      <div className="text-[10px] font-bold tracking-wider text-red-700/80 dark:text-red-300/80 uppercase">
+                        Max Possible
+                      </div>
+                      <div className="text-base font-black text-red-950 dark:text-red-100">
+                        {reqSGPAInfo.maxPossibleCGPA.toFixed(2)}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {reqSGPAInfo.maxPossibleCGPA != null && reqSGPAInfo.requiredSGPA > 10 && (
-                  <div className="border-l border-border/60 pl-3.5 text-left">
-                    <div className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                      Max Possible
-                    </div>
-                    <div className="text-base font-bold text-foreground">
-                      {reqSGPAInfo.maxPossibleCGPA.toFixed(2)}
-                    </div>
-                  </div>
-                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ── Guided Next Steps (when form is not ready yet) ── */}
           {!(
             (isFirstYear && (selectedCycle === 'physics' || selectedCycle === 'chemistry')) ||
             (isHigherSem && selectedBranch)
           ) && (
-            <div className="animate-fade-in flex items-center gap-3.5 rounded-xl border border-dashed border-border/80 bg-muted/15 p-4 sm:p-5 text-left text-sm text-muted-foreground">
-              <Compass className="h-5 w-5 shrink-0 text-primary" />
-              <div>
-                <p className="font-medium text-foreground text-xs sm:text-sm">
-                  {!selectedSemester
-                    ? 'Step 1: Choose your Semester above to start'
-                    : isFirstYear && !selectedCycle
-                    ? 'Step 2: Select your Cycle (Physics or Chemistry) to load subjects'
-                    : isHigherSem && !selectedBranch
-                    ? 'Step 2: Select your Engineering Branch to load subjects'
-                    : 'Complete configuration to unlock calculation'}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Once your stream is selected, you can enter MSE/CIA marks and choose target grades.
-                </p>
+              <div className="animate-fade-in flex items-center gap-3.5 rounded-xl border border-dashed border-border/80 bg-muted/15 p-4 sm:p-5 text-left text-sm text-muted-foreground">
+                <Compass className="h-5 w-5 shrink-0 text-primary" />
+                <div>
+                  <p className="font-medium text-foreground text-xs sm:text-sm">
+                    {!selectedSemester
+                      ? 'Step 1: Choose your Semester above to start'
+                      : isFirstYear && !selectedCycle
+                        ? 'Step 2: Select your Cycle (Physics or Chemistry) to load subjects'
+                        : isHigherSem && !selectedBranch
+                          ? 'Step 2: Select your Engineering Branch to load subjects'
+                          : 'Complete configuration to unlock calculation'}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Once your stream is selected, you can enter MSE/CIA marks and choose target grades.
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* ── FirstYear Form ── */}
           {isFirstYear &&
@@ -789,12 +774,12 @@ const App = () => {
                 If this tool helped you save time during exams, consider buying me a chai! ☕
               </p>
             </div>
-            
+
             <div className="mt-2 flex w-full flex-col items-center gap-4 rounded-xl border border-border bg-muted/30 p-4">
               <div className="overflow-hidden rounded-xl bg-white p-2">
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('upi://pay?pa=ruthlesscalm.dev@okicici&pn=PAVAN GOWDA S R&cu=INR&tn=EaseGPA Support')}`} 
-                  alt="UPI QR Code" 
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('upi://pay?pa=ruthlesscalm.dev@okicici&pn=PAVAN GOWDA S R&cu=INR&tn=EaseGPA Support')}`}
+                  alt="UPI QR Code"
                   className="h-[180px] w-[180px]"
                 />
               </div>
@@ -816,7 +801,7 @@ const App = () => {
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
-            
+
           </div>
         </div>
       )}
