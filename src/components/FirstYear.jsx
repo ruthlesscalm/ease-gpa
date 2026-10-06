@@ -33,6 +33,8 @@ import {
   getAchievableGrades,
   calculateSSENeeded,
   calculateSGPA,
+  normalizeMSE,
+  calculateCATTotal,
 } from '@/lib/grading';
 
 const physicsCycleSubjects = [
@@ -231,12 +233,38 @@ function GradeBadge({ grade, points, size = 'sm' }) {
 // ── Subject Input Item (memoized — only re-renders when its own marks change) ──
 const SubjectItem = memo(function SubjectItem({
   subject,
-  mseData,
-  ciaData,
+  subjectState = {},
   handleInputChange,
-  index,
+  handleModeToggle,
 }) {
   const creditInfo = checkCredits(subject);
+  const isStandardCIA = creditInfo.maxCIAMarks === 30;
+
+  const mseData = subjectState.mse || DEFAULT_FIELD;
+  const ciaData = subjectState.cia || DEFAULT_FIELD;
+  const cat1Data = subjectState.cat1 || DEFAULT_FIELD;
+  const cat2Data = subjectState.cat2 || DEFAULT_FIELD;
+  const cat3Data = subjectState.cat3 || DEFAULT_FIELD;
+
+  // Determine mode: 'cat' by default if standard CIA and either no mode is set or 'cat' is set, or if cat fields are populated
+  const ciaMode = isStandardCIA
+    ? subjectState.ciaMode ||
+      (cat1Data.value !== '' || cat2Data.value !== '' || cat3Data.value !== ''
+        ? 'cat'
+        : ciaData.value !== ''
+          ? 'direct'
+          : 'cat')
+    : 'direct';
+
+  const catSum = calculateCATTotal(cat1Data.value, cat2Data.value, cat3Data.value);
+  const hasCatEntered = cat1Data.value !== '' || cat2Data.value !== '' || cat3Data.value !== '';
+  const isCatInvalid = cat1Data.isInvalid || cat2Data.isInvalid || cat3Data.isInvalid || catSum > 30;
+
+  const mseNum = parseFloat(mseData.value);
+  const normalizedMSE =
+    !isNaN(mseNum) && mseNum >= 0 && !mseData.isInvalid
+      ? normalizeMSE(mseNum)
+      : null;
 
   return (
     <Item
@@ -255,75 +283,272 @@ const SubjectItem = memo(function SubjectItem({
         </ItemTitle>
         <ItemDescription className="pl-9">{subject.name}</ItemDescription>
       </ItemContent>
-      <FieldGroup className="grid basis-full grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field data-invalid={mseData.isInvalid}>
-          <FieldLabel htmlFor={`mse-${subject.alias}`}>
-            <span className="flex items-center gap-1.5">
-              MSE Marks
-              {mseData.isInvalid && (
-                <span className="text-[10px] font-semibold text-destructive">
-                  Invalid!
+      <FieldGroup className="grid basis-full grid-cols-1 gap-3.5 sm:grid-cols-2">
+        {/* ── MSE Section ── */}
+        <Field data-invalid={mseData.isInvalid} className="flex flex-col justify-between">
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <FieldLabel htmlFor={`mse-${subject.alias}`} className="text-xs font-medium">
+                <span className="flex items-center gap-1.5">
+                  MSE Marks
+                  {mseData.isInvalid && (
+                    <span className="text-[10px] font-semibold text-destructive">
+                      Invalid!
+                    </span>
+                  )}
+                </span>
+              </FieldLabel>
+              {subject.mse && (
+                <span className="text-[10px] font-medium text-muted-foreground">
+                  Max 40 (Scaled to 30)
                 </span>
               )}
-            </span>
-          </FieldLabel>
-          <Input
-            id={`mse-${subject.alias}`}
-            type="text"
-            inputMode="decimal"
-            placeholder="Out of 40 Marks"
-            disabled={!subject.mse}
-            max={creditInfo.maxMSEMarks}
-            min={0}
-            value={mseData.value}
-            className={
-              mseData.isInvalid
-                ? 'border-destructive/50 ring-2 ring-destructive/20'
-                : ''
-            }
-            onChange={(e) =>
-              handleInputChange(
-                e.target.value,
-                'mse',
-                subject.alias,
-                creditInfo.maxMSEMarks,
-              )
-            }
-          />
+            </div>
+            <Input
+              id={`mse-${subject.alias}`}
+              type="text"
+              inputMode="decimal"
+              placeholder={subject.mse ? 'Out of 40 Marks' : 'No MSE'}
+              disabled={!subject.mse}
+              max={creditInfo.maxMSEMarks}
+              min={0}
+              value={mseData.value}
+              className={
+                mseData.isInvalid
+                  ? 'border-destructive/50 ring-2 ring-destructive/20'
+                  : ''
+              }
+              onChange={(e) =>
+                handleInputChange(
+                  e.target.value,
+                  'mse',
+                  subject.alias,
+                  creditInfo.maxMSEMarks,
+                )
+              }
+            />
+          </div>
+          {subject.mse ? (
+            <div className="flex items-center justify-between text-[11px] pt-1 text-muted-foreground">
+              <span>Normalized (to 30):</span>
+              <span
+                className={`font-semibold ${
+                  mseData.isInvalid ? 'text-destructive' : 'text-primary'
+                }`}
+              >
+                {normalizedMSE !== null ? normalizedMSE : '0'}{' '}
+                <span className="font-normal opacity-70">/ 30</span>
+              </span>
+            </div>
+          ) : (
+            <div className="text-[11px] text-muted-foreground/80 pt-1">
+              No MSE component
+            </div>
+          )}
         </Field>
-        <Field data-invalid={ciaData.isInvalid}>
-          <FieldLabel htmlFor={`cia-${subject.alias}`}>
-            <span className="flex items-center gap-1.5">
-              Other Component
-              {ciaData.isInvalid && (
-                <span className="text-[10px] font-semibold text-destructive">
-                  Invalid!
+
+        {/* ── CIA Section ── */}
+        <Field
+          data-invalid={
+            isStandardCIA && ciaMode === 'cat' ? isCatInvalid : ciaData.isInvalid
+          }
+          className="flex flex-col justify-between"
+        >
+          <div>
+            <div className="mb-1.5 flex items-center justify-between gap-1">
+              <FieldLabel htmlFor={`cia-${subject.alias}`} className="text-xs font-medium">
+                <span className="flex items-center gap-1.5">
+                  CIA Marks
+                  {((isStandardCIA && ciaMode === 'cat' && isCatInvalid) ||
+                    ((!isStandardCIA || ciaMode === 'direct') &&
+                      ciaData.isInvalid)) && (
+                    <span className="text-[10px] font-semibold text-destructive">
+                      Invalid!
+                    </span>
+                  )}
+                </span>
+              </FieldLabel>
+
+              {isStandardCIA ? (
+                <div className="inline-flex items-center rounded-lg bg-muted/80 p-0.5 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => handleModeToggle(subject.alias, 'cat')}
+                    className={`rounded px-1.5 py-0.5 font-medium transition-all cursor-pointer ${
+                      ciaMode === 'cat'
+                        ? 'bg-background text-foreground shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    3 CATs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleModeToggle(subject.alias, 'direct')}
+                    className={`rounded px-1.5 py-0.5 font-medium transition-all cursor-pointer ${
+                      ciaMode === 'direct'
+                        ? 'bg-background text-foreground shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Direct
+                  </button>
+                </div>
+              ) : (
+                <span className="text-[10px] font-medium text-muted-foreground">
+                  Max {creditInfo.maxCIAMarks}
                 </span>
               )}
-            </span>
-          </FieldLabel>
-          <Input
-            id={`cia-${subject.alias}`}
-            type="text"
-            inputMode="decimal"
-            placeholder={creditInfo.placeholder}
-            max={creditInfo.maxCIAMarks}
-            min={0}
-            value={ciaData.value}
-            className={
-              ciaData.isInvalid
-                ? 'border-destructive/50 ring-2 ring-destructive/20'
-                : ''
-            }
-            onChange={(e) =>
-              handleInputChange(
-                e.target.value,
-                'cia',
-                subject.alias,
-                creditInfo.maxCIAMarks,
-              )
-            }
-          />
+            </div>
+
+            {isStandardCIA && ciaMode === 'cat' ? (
+              <div className="grid grid-cols-3 gap-1.5">
+                <div>
+                  <label
+                    htmlFor={`cat1-${subject.alias}`}
+                    className="mb-0.5 block text-center text-[10px] font-medium text-muted-foreground"
+                  >
+                    CAT 1
+                  </label>
+                  <Input
+                    id={`cat1-${subject.alias}`}
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="/ 10"
+                    max={10}
+                    min={0}
+                    value={cat1Data.value}
+                    className={`h-8 text-center text-xs ${
+                      cat1Data.isInvalid
+                        ? 'border-destructive/50 ring-2 ring-destructive/20'
+                        : ''
+                    }`}
+                    onChange={(e) =>
+                      handleInputChange(
+                        e.target.value,
+                        'cat1',
+                        subject.alias,
+                        10,
+                      )
+                    }
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor={`cat2-${subject.alias}`}
+                    className="mb-0.5 block text-center text-[10px] font-medium text-muted-foreground"
+                  >
+                    CAT 2
+                  </label>
+                  <Input
+                    id={`cat2-${subject.alias}`}
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="/ 10"
+                    max={10}
+                    min={0}
+                    value={cat2Data.value}
+                    className={`h-8 text-center text-xs ${
+                      cat2Data.isInvalid
+                        ? 'border-destructive/50 ring-2 ring-destructive/20'
+                        : ''
+                    }`}
+                    onChange={(e) =>
+                      handleInputChange(
+                        e.target.value,
+                        'cat2',
+                        subject.alias,
+                        10,
+                      )
+                    }
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor={`cat3-${subject.alias}`}
+                    className="mb-0.5 block text-center text-[10px] font-medium text-muted-foreground"
+                  >
+                    CAT 3
+                  </label>
+                  <Input
+                    id={`cat3-${subject.alias}`}
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="/ 10"
+                    max={10}
+                    min={0}
+                    value={cat3Data.value}
+                    className={`h-8 text-center text-xs ${
+                      cat3Data.isInvalid
+                        ? 'border-destructive/50 ring-2 ring-destructive/20'
+                        : ''
+                    }`}
+                    onChange={(e) =>
+                      handleInputChange(
+                        e.target.value,
+                        'cat3',
+                        subject.alias,
+                        10,
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            ) : (
+              <Input
+                id={`cia-${subject.alias}`}
+                type="text"
+                inputMode="decimal"
+                placeholder={creditInfo.placeholder}
+                max={creditInfo.maxCIAMarks}
+                min={0}
+                value={ciaData.value}
+                className={
+                  ciaData.isInvalid
+                    ? 'border-destructive/50 ring-2 ring-destructive/20'
+                    : ''
+                }
+                onChange={(e) =>
+                  handleInputChange(
+                    e.target.value,
+                    'cia',
+                    subject.alias,
+                    creditInfo.maxCIAMarks,
+                  )
+                }
+              />
+            )}
+          </div>
+
+          {isStandardCIA && ciaMode === 'cat' ? (
+            <div className="flex items-center justify-between text-[11px] pt-1 text-muted-foreground">
+              <span>Total CIA (Sum):</span>
+              <span
+                className={`font-semibold ${
+                  isCatInvalid ? 'text-destructive' : 'text-primary'
+                }`}
+              >
+                {hasCatEntered ? catSum : '0'}{' '}
+                <span className="font-normal opacity-70">/ 30</span>
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between text-[11px] pt-1 text-muted-foreground">
+              <span>Direct Score:</span>
+              <span
+                className={`font-semibold ${
+                  ciaData.isInvalid ? 'text-destructive' : 'text-primary'
+                }`}
+              >
+                {ciaData.value !== '' && !ciaData.isInvalid
+                  ? ciaData.value
+                  : '0'}{' '}
+                <span className="font-normal opacity-70">
+                  / {creditInfo.maxCIAMarks}
+                </span>
+              </span>
+            </div>
+          )}
         </Field>
       </FieldGroup>
     </Item>
@@ -534,14 +759,95 @@ const FirstYear = ({ selectedCycle, selectedSemester, targetSGPA }) => {
 
   const handleInputChange = useCallback((value, field, alias, max) => {
     const numValue = parseFloat(value);
-    const isInvalid = numValue > max || numValue < 0 || isNaN(numValue);
-    setMarks((prev) => ({
-      ...prev,
-      [alias]: {
-        ...prev[alias],
+    const isInvalid =
+      value !== '' && (numValue > max || numValue < 0 || isNaN(numValue));
+
+    setMarks((prev) => {
+      const currentSubject = prev[alias] || {};
+      const updatedSubject = {
+        ...currentSubject,
         [field]: { value, isInvalid },
-      },
-    }));
+      };
+
+      // If one of the CAT fields changed, sync the CIA total
+      if (field === 'cat1' || field === 'cat2' || field === 'cat3') {
+        const c1 = field === 'cat1' ? value : currentSubject.cat1?.value || '';
+        const c2 = field === 'cat2' ? value : currentSubject.cat2?.value || '';
+        const c3 = field === 'cat3' ? value : currentSubject.cat3?.value || '';
+
+        const sum =
+          (parseFloat(c1) || 0) + (parseFloat(c2) || 0) + (parseFloat(c3) || 0);
+        const hasAnyCat = c1 !== '' || c2 !== '' || c3 !== '';
+        const catInvalid =
+          (c1 !== '' &&
+            (parseFloat(c1) > 10 || parseFloat(c1) < 0 || isNaN(parseFloat(c1)))) ||
+          (c2 !== '' &&
+            (parseFloat(c2) > 10 || parseFloat(c2) < 0 || isNaN(parseFloat(c2)))) ||
+          (c3 !== '' &&
+            (parseFloat(c3) > 10 || parseFloat(c3) < 0 || isNaN(parseFloat(c3)))) ||
+          sum > 30;
+
+        updatedSubject.cia = {
+          value: hasAnyCat ? String(Math.round(sum * 100) / 100) : '',
+          isInvalid: catInvalid,
+        };
+      }
+
+      return {
+        ...prev,
+        [alias]: updatedSubject,
+      };
+    });
+  }, []);
+
+  const handleModeToggle = useCallback((alias, mode) => {
+    setMarks((prev) => {
+      const currentSubject = prev[alias] || {};
+      const updatedSubject = {
+        ...currentSubject,
+        ciaMode: mode,
+      };
+
+      if (
+        mode === 'direct' &&
+        (!currentSubject.cia?.value || currentSubject.cia?.value === '')
+      ) {
+        const c1 = currentSubject.cat1?.value || '';
+        const c2 = currentSubject.cat2?.value || '';
+        const c3 = currentSubject.cat3?.value || '';
+        const hasAnyCat = c1 !== '' || c2 !== '' || c3 !== '';
+        if (hasAnyCat) {
+          const sum =
+            (parseFloat(c1) || 0) +
+            (parseFloat(c2) || 0) +
+            (parseFloat(c3) || 0);
+          updatedSubject.cia = {
+            value: String(Math.round(sum * 100) / 100),
+            isInvalid: sum > 30,
+          };
+        }
+      } else if (mode === 'cat') {
+        const c1 = currentSubject.cat1?.value || '';
+        const c2 = currentSubject.cat2?.value || '';
+        const c3 = currentSubject.cat3?.value || '';
+        const hasAnyCat = c1 !== '' || c2 !== '' || c3 !== '';
+        if (hasAnyCat) {
+          const sum =
+            (parseFloat(c1) || 0) +
+            (parseFloat(c2) || 0) +
+            (parseFloat(c3) || 0);
+          updatedSubject.cia = {
+            value: String(Math.round(sum * 100) / 100),
+            isInvalid: sum > 30,
+          };
+        }
+      }
+
+      return {
+        ...prev,
+        [alias]: updatedSubject,
+      };
+    });
   }, []);
 
   // Memoize allSubjects so downstream useMemo deps are stable
@@ -558,14 +864,54 @@ const FirstYear = ({ selectedCycle, selectedSemester, targetSGPA }) => {
   const results = useMemo(() => {
     return allSubjects.map((subject) => {
       const subjectMarks = marks[subject.alias] || {};
-      const mseData = subjectMarks.mse || { value: '', isInvalid: false };
-      const ciaData = subjectMarks.cia || { value: '', isInvalid: false };
+      const creditInfo = checkCredits(subject);
+      const isStandardCIA = creditInfo.maxCIAMarks === 30;
+
+      const mseData = subjectMarks.mse || DEFAULT_FIELD;
+      const ciaData = subjectMarks.cia || DEFAULT_FIELD;
+      const cat1Data = subjectMarks.cat1 || DEFAULT_FIELD;
+      const cat2Data = subjectMarks.cat2 || DEFAULT_FIELD;
+      const cat3Data = subjectMarks.cat3 || DEFAULT_FIELD;
+
+      const ciaMode = isStandardCIA
+        ? subjectMarks.ciaMode ||
+          (cat1Data.value !== '' ||
+          cat2Data.value !== '' ||
+          cat3Data.value !== ''
+            ? 'cat'
+            : ciaData.value !== ''
+              ? 'direct'
+              : 'cat')
+        : 'direct';
+
+      let ciaValue = 0;
+      let hasCiaEntered = false;
+      let isCiaInvalid = false;
+
+      if (isStandardCIA && ciaMode === 'cat') {
+        hasCiaEntered =
+          cat1Data.value !== '' || cat2Data.value !== '' || cat3Data.value !== '';
+        const c1 = parseFloat(cat1Data.value) || 0;
+        const c2 = parseFloat(cat2Data.value) || 0;
+        const c3 = parseFloat(cat3Data.value) || 0;
+        ciaValue = calculateCATTotal(c1, c2, c3);
+        isCiaInvalid =
+          cat1Data.isInvalid ||
+          cat2Data.isInvalid ||
+          cat3Data.isInvalid ||
+          ciaValue > 30;
+      } else {
+        hasCiaEntered = ciaData.value !== '';
+        ciaValue = parseFloat(ciaData.value) || 0;
+        isCiaInvalid = ciaData.isInvalid;
+      }
 
       const mseValue = parseFloat(mseData.value) || 0;
-      const ciaValue = parseFloat(ciaData.value) || 0;
-
-      const hasMarksEntered = mseData.value !== '' || ciaData.value !== '';
-      const hasInvalidMarks = mseData.isInvalid || ciaData.isInvalid;
+      const hasMseEntered = mseData.value !== '';
+      const hasMarksEntered =
+        (subject.mse ? hasMseEntered : false) || hasCiaEntered;
+      const hasInvalidMarks =
+        (subject.mse && mseData.isInvalid) || isCiaInvalid;
 
       if (hasSSE(subject)) {
         const internal = calculateInternal(mseValue, ciaValue, subject);
@@ -576,7 +922,11 @@ const FirstYear = ({ selectedCycle, selectedSemester, targetSGPA }) => {
         if (target) {
           const gradeEntry = GRADE_TABLE.find((g) => g.grade === target);
           if (gradeEntry) {
-            sseInfo = calculateSSENeeded(gradeEntry.min, internal, subject.sseConfig);
+            sseInfo = calculateSSENeeded(
+              gradeEntry.min,
+              internal,
+              subject.sseConfig,
+            );
           }
         }
 
@@ -650,15 +1000,13 @@ const FirstYear = ({ selectedCycle, selectedSemester, targetSGPA }) => {
           <form className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
             {allSubjects.map((subject, index) => {
               const subjectState = marks[subject.alias] || {};
-              const mseData = subjectState.mse || DEFAULT_FIELD;
-              const ciaData = subjectState.cia || DEFAULT_FIELD;
               return (
                 <SubjectItem
                   key={subject.alias}
                   subject={subject}
-                  mseData={mseData}
-                  ciaData={ciaData}
+                  subjectState={subjectState}
                   handleInputChange={handleInputChange}
+                  handleModeToggle={handleModeToggle}
                   index={index}
                 />
               );

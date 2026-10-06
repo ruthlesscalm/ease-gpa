@@ -42,7 +42,7 @@ export function hasSSE(subject) {
 
 /**
  * Calculate internal marks from raw MSE and CIA inputs.
- * For MSE subjects: (mse/40)*30 + cia
+ * For MSE subjects: (mse/40)*30 + cia  (normalized to 30 from MSE + 30 from CIA = 60 max)
  * For non-MSE subjects: just cia
  */
 export function calculateInternal(mseRaw, ciaRaw, subject) {
@@ -50,6 +50,21 @@ export function calculateInternal(mseRaw, ciaRaw, subject) {
     return (mseRaw / 40) * 30 + ciaRaw;
   }
   return ciaRaw;
+}
+
+/** Normalize MSE marks from out of 40 to out of 30 */
+export function normalizeMSE(mseRaw) {
+  const raw = parseFloat(mseRaw);
+  if (isNaN(raw) || raw <= 0) return 0;
+  return Math.round(((raw / 40) * 30) * 100) / 100;
+}
+
+/** Sum up 3 CAT test marks (each out of 10, total out of 30) */
+export function calculateCATTotal(cat1, cat2, cat3) {
+  const c1 = parseFloat(cat1) || 0;
+  const c2 = parseFloat(cat2) || 0;
+  const c3 = parseFloat(cat3) || 0;
+  return Math.round((c1 + c2 + c3) * 100) / 100;
 }
 
 /**
