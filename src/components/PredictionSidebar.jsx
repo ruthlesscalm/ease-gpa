@@ -125,11 +125,11 @@ Percentage: ${avgPercentage}% (${countedCredits}/${totalCredits} Credits)
 
 Subject Breakdown:
 ${results
-  .map((r) => {
-    const marksDisplay = r.totalMarks != null ? Math.round(r.totalMarks * 10) / 10 : Math.round(r.internal * 10) / 10;
-    return `• ${r.alias} (${r.credits}cr): ${marksDisplay}/100 -> Grade ${r.grade || '—'} (${r.credits}cr × ${r.gradePoints ?? 0})`;
-  })
-  .join('\n')}
+        .map((r) => {
+          const marksDisplay = r.totalMarks != null ? Math.round(r.totalMarks * 10) / 10 : Math.round(r.internal * 10) / 10;
+          return `• ${r.alias} (${r.credits}cr): ${marksDisplay}/100 -> Grade ${r.grade || '—'} (${r.credits}cr × ${r.gradePoints ?? 0})`;
+        })
+        .join('\n')}
 `;
     try {
       await navigator.clipboard.writeText(text);
@@ -149,8 +149,8 @@ ${results
 
         {/* Live Status Pill */}
         <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white backdrop-blur-md">
-          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          LIVE SGPA PREDICTION
+          {/* <span className="h-2 w-2 rounded-full bg-emerald-400" /> */}
+          SGPA PREDICTION
         </div>
 
         {/* Score Gauge & Status Row */}
@@ -248,12 +248,11 @@ ${results
                       {r.credits}cr × {r.gradePoints ?? 0}
                     </span>
                     <span
-                      className={`inline-flex w-7 items-center justify-center rounded-md border px-1 py-0.5 text-[10px] font-bold ${
-                        r.grade
-                          ? GRADE_BADGE_STYLES[r.grade] ||
-                            'border-border bg-muted/50'
-                          : 'border-dashed border-border/80 text-muted-foreground'
-                      }`}
+                      className={`inline-flex w-7 items-center justify-center rounded-md border px-1 py-0.5 text-[10px] font-bold ${r.grade
+                        ? GRADE_BADGE_STYLES[r.grade] ||
+                        'border-border bg-muted/50'
+                        : 'border-dashed border-border/80 text-muted-foreground'
+                        }`}
                     >
                       {r.grade || '—'}
                     </span>

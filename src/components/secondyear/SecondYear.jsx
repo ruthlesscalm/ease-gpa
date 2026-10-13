@@ -1,6 +1,5 @@
 import { Input } from '@/components/ui/input';
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
-import PredictionSidebar from '@/components/PredictionSidebar';
 import {
   Item,
   ItemContent,
@@ -17,15 +16,7 @@ import {
   SelectLabel,
 } from '@/components/ui/select';
 import { useState, useMemo, useCallback, useEffect, memo } from 'react';
-import {
-  BookOpen,
-  Target,
-  TrendingUp,
-  CheckCircle,
-  XCircle,
-  Trophy,
-  Clock,
-} from 'lucide-react';
+import { CheckCircle, XCircle } from 'lucide-react';
 import {
   GRADE_TABLE,
   getGradeFromMarks,
@@ -48,11 +39,11 @@ function ModuleBreakdown({ sseActual, perModule }) {
   const minModules = Math.ceil(sseActual / 16);
   return (
     <>
-      <div className="flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2">
-        <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
-          Min. modules to study
+      <div className="flex items-center justify-between rounded-lg border border-amber-600/20 bg-amber-500/10 px-3 py-1.5 text-xs">
+        <span className="font-medium text-amber-800 dark:text-amber-300">
+          Min. Modules to Study
         </span>
-        <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
+        <span className="font-bold text-amber-800 dark:text-amber-300">
           {minModules} <span className="font-normal opacity-70">of 5</span>
         </span>
       </div>
@@ -63,12 +54,13 @@ function ModuleBreakdown({ sseActual, perModule }) {
           return (
             <div
               key={m}
-              className={`flex flex-1 flex-col items-center rounded-lg border px-1.5 py-2 text-center ${isNeeded
+              className={`flex flex-1 flex-col items-center rounded-lg border px-1.5 py-1.5 text-center transition-colors ${
+                isNeeded
                   ? isMSECovered
-                    ? 'border-primary/30 bg-primary/10'
-                    : 'border-foreground/15 bg-foreground/5'
-                  : 'border-border/30 bg-muted/20 opacity-50'
-                }`}
+                    ? 'border-primary/40 bg-primary/10'
+                    : 'border-border bg-muted/40'
+                  : 'border-border/40 bg-muted/20 opacity-50'
+              }`}
             >
               <span
                 className={`text-xs font-bold ${isNeeded ? 'text-foreground' : 'text-muted-foreground'}`}
@@ -76,17 +68,17 @@ function ModuleBreakdown({ sseActual, perModule }) {
                 M{m}
               </span>
               <span
-                className={`text-[11px] font-medium ${isNeeded ? 'text-foreground/80' : 'text-muted-foreground'}`}
+                className={`text-[11px] font-medium ${isNeeded ? 'text-foreground/90' : 'text-muted-foreground'}`}
               >
                 {perModule}/16
               </span>
               {isMSECovered && (
                 <span className="mt-0.5 text-[10px] font-medium text-primary">
-                  MSE prep ✓
+                  MSE covered
                 </span>
               )}
               {!isNeeded && (
-                <span className="mt-0.5 text-[11px] text-foreground">skip</span>
+                <span className="mt-0.5 text-[10px] text-muted-foreground">skip</span>
               )}
             </div>
           );
@@ -96,27 +88,27 @@ function ModuleBreakdown({ sseActual, perModule }) {
   );
 }
 
-// ── Grade badge ──
+// ── Grade badge color mapping (Semantic System) ──
 const GRADE_COLORS = {
-  O: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-  'A+': 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-  A: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
-  'B+': 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
-  B: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-  C: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400',
-  P: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
-  F: 'bg-red-500/15 text-red-600 dark:text-red-400',
+  O: 'border-emerald-600/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  'A+': 'border-emerald-600/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  A: 'border-primary/30 bg-primary/10 text-primary dark:text-primary',
+  'B+': 'border-primary/30 bg-primary/10 text-primary dark:text-primary',
+  B: 'border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+  C: 'border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+  P: 'border-slate-500/30 bg-slate-500/10 text-slate-700 dark:text-slate-300',
+  F: 'border-destructive/30 bg-destructive/10 text-destructive',
 };
 
 function GradeBadge({ grade, points, size = 'sm' }) {
   const colors = GRADE_COLORS[grade] || GRADE_COLORS.F;
   const sizeClasses =
     size === 'lg'
-      ? 'px-3 py-1 text-sm font-bold'
+      ? 'px-2.5 py-1 text-xs font-bold'
       : 'px-2 py-0.5 text-[11px] font-semibold';
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full ${colors} ${sizeClasses}`}
+      className={`inline-flex items-center gap-1 rounded border ${colors} ${sizeClasses}`}
     >
       {grade}
       {points != null && <span className="opacity-70">({points})</span>}
@@ -777,18 +769,13 @@ const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA, onSummaryCha
   return (
     <div className="flex w-full flex-col gap-6">
       {/* Marks Header */}
-      <div className="flex items-center gap-2.5 pt-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-          <BookOpen className="h-4 w-4 text-primary" />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold text-foreground">
-            Enter Your Marks
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            {getBranchLabel(selectedBranch)} — Semester {selectedSemester}
-          </p>
-        </div>
+      <div className="border-t border-border pt-4">
+        <h3 className="text-sm font-bold text-foreground">
+          Step 2 • Course Internals (MSE &amp; CIA)
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          {getBranchLabel(selectedBranch)} — Semester {selectedSemester}
+        </p>
       </div>
 
       {/* Subject Cards Form (2 columns) */}
@@ -808,19 +795,14 @@ const SecondYear = ({ selectedBranch, selectedSemester, targetSGPA, onSummaryCha
 
       {/* Target Grades Section (when marks entered) */}
       {hasAnyMarks && (
-        <div className="flex flex-col gap-4 border-t border-border/40 pt-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-              <Target className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">
-                Target Grades & Exam Breakdown
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Select target grades for exam subjects
-              </p>
-            </div>
+        <div className="flex flex-col gap-4 border-t border-border pt-5">
+          <div>
+            <h3 className="text-sm font-bold text-foreground">
+              Step 3 • Target Grades &amp; Exam Strategy
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Select target grades to calculate required semester end exam (SSE) marks and module study targets.
+            </p>
           </div>
 
           {/* Exam subjects */}
